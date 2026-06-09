@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $users   = $pdo->query('SELECT id, email, plan, is_admin, blocked, blocked_reason, created FROM users ORDER BY created DESC LIMIT 100')->fetchAll();
 $flagged = $pdo->query('SELECT code, long_url, user_id, blocked, clicks FROM urls WHERE blocked = 1 ORDER BY id DESC LIMIT 50')->fetchAll();
+$leads   = $pdo->query('SELECT ts, name, email, company, message FROM enterprise_leads ORDER BY id DESC LIMIT 25')->fetchAll();
 $access  = $pdo->query('SELECT ts, event, code, ip, browser, platform, referer FROM access_log ORDER BY id DESC LIMIT 25')->fetchAll();
 $sec     = $pdo->query('SELECT ts, event, ip, detail FROM security_log ORDER BY id DESC LIMIT 25')->fetchAll();
 
@@ -117,6 +118,27 @@ render_header('Admin');
     </tbody>
   </table>
   <?php endif; ?>
+</div>
+
+<div class="card glass">
+  <h2>Enterprise leads</h2>
+  <div style="overflow-x:auto">
+  <table class="links-table">
+    <thead><tr><th>When</th><th>Name</th><th>Email</th><th>Company</th><th>Message</th></tr></thead>
+    <tbody>
+    <?php foreach ($leads as $l): ?>
+      <tr>
+        <td><?= e(gmdate('m-d H:i', (int) $l['ts'])) ?></td>
+        <td><?= e($l['name']) ?></td>
+        <td><?= e($l['email']) ?></td>
+        <td><?= e($l['company']) ?></td>
+        <td class="long" title="<?= e($l['message']) ?>"><?= e($l['message']) ?></td>
+      </tr>
+    <?php endforeach; ?>
+    <?php if (!$leads): ?><tr><td colspan="5" style="color:var(--ink-faint)">No leads yet.</td></tr><?php endif; ?>
+    </tbody>
+  </table>
+  </div>
 </div>
 
 <div class="card glass">

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `id`                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `email`                  VARCHAR(190) NOT NULL,
   `password_hash`          VARCHAR(255) NOT NULL,
-  `plan`                   ENUM('free','pro','premium') NOT NULL DEFAULT 'free',
+  `plan`                   ENUM('free','pro','premium','enterprise') NOT NULL DEFAULT 'free',
   `billing_interval`       ENUM('month','year') NULL DEFAULT NULL,
   `stripe_customer_id`     VARCHAR(255) NULL DEFAULT NULL,
   `stripe_subscription_id` VARCHAR(255) NULL DEFAULT NULL,
@@ -65,6 +65,33 @@ CREATE TABLE IF NOT EXISTS `ip_reputation` (
   PRIMARY KEY (`ip`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Enterprise "contact sales" inquiries.
+CREATE TABLE IF NOT EXISTS `enterprise_leads` (
+  `id`      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ts`      INT UNSIGNED NOT NULL,
+  `name`    VARCHAR(120) NOT NULL DEFAULT '',
+  `email`   VARCHAR(190) NOT NULL DEFAULT '',
+  `company` VARCHAR(120) NOT NULL DEFAULT '',
+  `message` TEXT,
+  `ip`      VARCHAR(45) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `ts` (`ts`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Custom branded domains for Enterprise tenants (multi-tenant host routing).
+CREATE TABLE IF NOT EXISTS `domains` (
+  `id`       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `host`     VARCHAR(255) NOT NULL,
+  `user_id`  INT UNSIGNED NOT NULL,
+  `verified` TINYINT(1) NOT NULL DEFAULT 0,
+  `token`    VARCHAR(64) NOT NULL DEFAULT '',
+  `created`  INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `host` (`host`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `fk_domains_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Access log: who visits short links (and key auth events) — for security review.
 CREATE TABLE IF NOT EXISTS `access_log` (
   `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -89,6 +116,7 @@ CREATE TABLE IF NOT EXISTS `urls` (
   `long_url`  VARCHAR(2048) NOT NULL,
   `is_custom` TINYINT(1) NOT NULL DEFAULT 0,
   `blocked`   TINYINT(1) NOT NULL DEFAULT 0,
+  `domain_id` INT UNSIGNED NULL DEFAULT NULL,
   `clicks`    INT UNSIGNED NOT NULL DEFAULT 0,
   `created`   INT UNSIGNED NOT NULL,
   PRIMARY KEY (`id`),

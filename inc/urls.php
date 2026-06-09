@@ -46,7 +46,7 @@ function custom_urls_count(PDO $pdo, $user_id)
  * Create a short link for a user, enforcing the plan rules.
  * $slug is optional (custom name). Returns [row, null] or [null, errorMessage].
  */
-function create_short_url(PDO $pdo, array $user, $long_url, $slug = '')
+function create_short_url(PDO $pdo, array $user, $long_url, $slug = '', $domain_id = null)
 {
     $plan = plan_config($user['plan']);
     $long_url = trim((string) $long_url);
@@ -76,17 +76,18 @@ function create_short_url(PDO $pdo, array $user, $long_url, $slug = '')
         return array(null, $msg);
     }
 
-    // Custom slug handling.
+    // Custom slug handling. custom_slugs: 0 = none, null = unlimited, N = capped.
     $is_custom = 0;
     if ($slug !== '') {
-        if ($plan['custom_slugs'] <= 0) {
+        $slug_cap = $plan['custom_slugs'];          // null = unlimited
+        if ($slug_cap !== null && $slug_cap <= 0) {
             return array(null, 'Custom link names are a Premium feature. Upgrade to claim your own names.');
         }
         if (!is_valid_slug($slug)) {
             return array(null, 'Custom names must be 3–40 letters, numbers, hyphens or underscores (and not a reserved word).');
         }
-        if (custom_urls_count($pdo, $user['id']) >= $plan['custom_slugs']) {
-            return array(null, 'You have used all ' . $plan['custom_slugs'] . ' of your custom names.');
+        if ($slug_cap !== null && custom_urls_count($pdo, $user['id']) >= $slug_cap) {
+            return array(null, 'You have used all ' . $slug_cap . ' of your custom names.');
         }
         // Uniqueness.
         $stmt = $pdo->prepare('SELECT 1 FROM urls WHERE code = ?');
@@ -102,18 +103,20 @@ function create_short_url(PDO $pdo, array $user, $long_url, $slug = '')
 
     try {
         $stmt = $pdo->prepare(
-            'INSERT INTO urls (user_id, code, long_url, is_custom, created) VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO urls (user_id, code, long_url, is_custom, domain_id, created) VALUES (?, ?, ?, ?, ?, ?)'
         );
-        $stmt->execute(array($user['id'], $code, $long_url, $is_custom, time()));
+        $stmt->execute(array($user['id'], $code, $long_url, $is_custom, $domain_id, time()));
     } catch (PDOException $e) {
         // Unique race on the code.
         return array(null, 'That name was just taken — try another.');
     }
 
+    // Brand the short link with the host it was created on (custom domain or main).
+    $base = function_exists('request_base') ? request_base() : BASE_HREF;
     return array(array(
         'code'      => $code,
         'long_url'  => $long_url,
         'is_custom' => $is_custom,
-        'short_url' => BASE_HREF . $code,
+        'short_url' => $base . $code,
     ), null);
 }

@@ -33,6 +33,9 @@ render_header('Dashboard');
     <?php if (is_admin($user)): ?>
       <a class="btn btn-ghost" href="admin">Admin</a>
     <?php endif; ?>
+    <?php if ($user['plan'] === 'enterprise'): ?>
+      <a class="btn btn-ghost" href="domains">Domains</a>
+    <?php endif; ?>
     <?php if (plan_is_paid($user)): ?>
       <a class="btn btn-ghost" href="connect">Connect AI</a>
     <?php endif; ?>

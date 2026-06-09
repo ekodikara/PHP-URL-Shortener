@@ -76,21 +76,26 @@ function render_billing_toggle()
 function render_plans($current = null)
 {
     $features = array(
-        'free'    => array(TRIAL_DAYS . '-day free trial', '20 links total', '50 visits / month', 'QR codes + click stats'),
-        'pro'     => array('50 links / month', 'Unlimited visits', 'QR codes + click stats', 'Priority redirects'),
-        'premium' => array('Unlimited links', 'Unlimited visits', '100 custom link names', 'Everything in Pro'),
+        'free'       => array(TRIAL_DAYS . '-day free trial', '20 links total', '50 visits / month', 'QR codes + click stats'),
+        'pro'        => array('50 links / month', 'Unlimited visits', 'QR codes + click stats', 'Priority redirects'),
+        'premium'    => array('Unlimited links', 'Unlimited visits', '100 custom link names', 'Everything in Pro'),
+        'enterprise' => array('Everything in Premium', 'Custom branded domains', 'SSO (SAML & OIDC)', 'Unlimited custom names'),
     );
     $u = current_user();
     foreach ($GLOBALS['PLANS'] as $key => $p):
         $featured = ($key === 'pro');
         $is_current = ($current === $key);
         $is_trial = !empty($p['is_trial']);
+        $is_contact = !empty($p['contact']);
     ?>
     <div class="plan glass<?= $featured ? ' featured' : '' ?>">
       <?php if ($featured): ?><span class="tag">Most popular</span><?php endif; ?>
       <h3><?= e($p['name']) ?></h3>
       <p class="blurb"><?= e($p['blurb']) ?></p>
-      <?php if ($is_trial): ?>
+      <?php if ($is_contact): ?>
+        <div class="price" style="font-size:1.9rem">Custom</div>
+        <p class="save-note" style="visibility:visible">Tailored to your team</p>
+      <?php elseif ($is_trial): ?>
         <div class="price">$0<span>/<?= TRIAL_DAYS ?> days</span></div>
       <?php else: ?>
         <div class="price"
@@ -104,7 +109,9 @@ function render_plans($current = null)
       <ul>
         <?php foreach ($features[$key] as $feat): ?><li><?= e($feat) ?></li><?php endforeach; ?>
       </ul>
-      <?php if ($is_current && $is_trial): ?>
+      <?php if ($is_contact): ?>
+        <a class="btn <?= $is_current ? 'btn-ghost' : 'btn-solid' ?> btn-block" href="enterprise"><?= $is_current ? 'Your plan · contact us' : 'Contact sales' ?></a>
+      <?php elseif ($is_current && $is_trial): ?>
         <button class="btn btn-ghost btn-block" disabled><?= trial_active($u) ? trial_days_left($u) . ' day' . (trial_days_left($u) === 1 ? '' : 's') . ' left' : 'Trial ended' ?></button>
       <?php elseif ($is_current): ?>
         <a class="btn btn-ghost btn-block" href="billing-portal">Manage billing</a>

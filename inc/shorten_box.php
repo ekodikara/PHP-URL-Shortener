@@ -4,7 +4,7 @@
  * Shows the custom-name field only for plans that allow it.
  */
 $__plan = plan_config($user['plan']);
-$__can_custom = $__plan['custom_slugs'] > 0;
+$__can_custom = $__plan['custom_slugs'] === null || $__plan['custom_slugs'] > 0;
 
 if (trial_expired($user)):
 ?>

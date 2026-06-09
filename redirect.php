@@ -14,7 +14,7 @@ if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', (string) $code)) {
 
 // Pull the link plus the owner (for the account-wide monthly visit cap).
 $stmt = $pdo->prepare(
-    'SELECT u.id, u.long_url, u.blocked AS link_blocked, usr.id AS owner_id, usr.plan, usr.blocked AS owner_blocked, usr.month_visits, usr.visit_month
+    'SELECT u.id, u.long_url, u.blocked AS link_blocked, u.domain_id, usr.id AS owner_id, usr.plan, usr.blocked AS owner_blocked, usr.month_visits, usr.visit_month
        FROM urls u
        JOIN users usr ON usr.id = u.user_id
       WHERE u.code = ?'
@@ -23,6 +23,16 @@ $stmt->execute(array($code));
 $link = $stmt->fetch();
 
 if (!$link) {
+    http_response_code(404);
+    die('Short link not found.');
+}
+
+// Multi-tenant isolation: a branded-domain link resolves only on its own host,
+// and a main-app link resolves only on the main app (not on a custom domain).
+$cur = current_domain($pdo);
+$cur_id = $cur ? (int) $cur['id'] : null;
+if ((int) $link['domain_id'] !== (int) $cur_id) {
+    // (int)null === 0 on both sides keeps main-app links (NULL) on the main app.
     http_response_code(404);
     die('Short link not found.');
 }

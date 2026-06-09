@@ -3,7 +3,8 @@
     "description": "Snip — URL shortener with Stripe subscriptions",
     "require": {
         "php": ">=8.1",
-        "stripe/stripe-php": "^16.0"
+        "stripe/stripe-php": "^16.0",
+        "onelogin/php-saml": "^4.1"
     },
     "config": {
         "optimize-autoloader": true

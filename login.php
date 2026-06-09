@@ -3,6 +3,7 @@
  * Snip — login.
  */
 require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/inc/sso.php';
 require __DIR__ . '/inc/layout.php';
 
 if (current_user()) {
@@ -67,6 +68,18 @@ render_header('Log in');
       <?php if (captcha_needed($pdo)): ?><?= recaptcha_block() ?><?php endif; ?>
       <button class="btn btn-solid btn-block" type="submit">Log in</button>
     </form>
+
+    <?php if (sso_enabled()): ?>
+      <div style="display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--ink-faint);font-size:0.85rem">
+        <span style="flex:1;height:1px;background:var(--stroke)"></span>or<span style="flex:1;height:1px;background:var(--stroke)"></span>
+      </div>
+      <?php if (oidc_enabled()): ?>
+        <a class="btn btn-ghost btn-block" href="sso?provider=oidc&action=login" style="margin-bottom:8px">Sign in with SSO (OIDC)</a>
+      <?php endif; ?>
+      <?php if (saml_enabled()): ?>
+        <a class="btn btn-ghost btn-block" href="sso?provider=saml&action=login">Sign in with SSO (SAML)</a>
+      <?php endif; ?>
+    <?php endif; ?>
 
     <p class="auth-alt">New here? <a href="register">Create an account</a></p>
   </div>

@@ -267,6 +267,32 @@ so paid users can drive it from AI assistants.
 - **Access logging** — `log_access()` writes every redirect to `access_log`
   (ts, code, ip, browser, platform, referer, UA) via `parse_user_agent()`.
 
+## Enterprise plan (custom domains, SSO, contact sales)
+
+- **Plan**: `enterprise` (config) — unlimited everything, `custom_slugs => null`
+  (unlimited; `null` is treated as unlimited in `create_short_url`/shorten_box),
+  `contact => true` (no Stripe checkout; `checkout.php` already rejects it).
+  Pricing card shows "Custom / Contact sales".
+- **Contact sales**: `enterprise.php` (clean `/enterprise`) — public form
+  (honeypot + rate-limited) → `enterprise_leads` table; visible in the admin panel.
+- **Multi-tenant custom domains** (`inc/domains.php`, `domains.php` page,
+  Enterprise-only): `domains` table maps host→owner (DNS-TXT verified). Links get
+  `urls.domain_id`; `redirect.php` enforces isolation — a branded link resolves
+  only on its host, a main-app link only on the main host (`(int)domain_id ===
+  (int)current_domain_id`). New links created while on a verified custom host are
+  tagged with it; `request_base()` brands the returned short URL.
+- **TLS for custom domains**: prod `Caddyfile` uses **on-demand TLS** with
+  `ask http://web:80/tls-check`; `tls-check.php` returns 200 only for the main
+  domain or a verified custom domain, so certs are minted only for known hosts.
+- **SSO** (`inc/sso.php`, `sso.php`, Enterprise): env-gated, both protocols.
+  **OIDC** (hand-rolled: discovery or explicit endpoints, `state` CSRF, code
+  exchange, userinfo) and **SAML 2.0** (`onelogin/php-saml`: `/sso?provider=saml&
+  action=login|acs|metadata`). SSO users are auto-provisioned on the Enterprise
+  plan (`sso_provision`). "Sign in with SSO" buttons appear on `/login` only when
+  a provider is configured. Config: `OIDC_*` / `SAML_IDP_*` in `.env`.
+  NOTE: OIDC callback + SAML need a real IdP to exercise end-to-end; the
+  initiation/gating/config paths are verified.
+
 ## Known gaps / TODO
 
 - **Billing is demo-only**: `upgrade.php` flips the plan with no payment. Real

@@ -1,17 +1,31 @@
 # Snip — Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
-# SITE_DOMAIN is provided by docker-compose.prod.yml (e.g. sho.rt).
-# Use ":80" as the domain for a quick no-TLS local prod test.
+# Serves the main app domain AND Enterprise custom domains (on-demand TLS).
 
+{
+	# On-demand TLS: before issuing a cert for ANY hostname, Caddy asks the app
+	# whether it's a known/verified domain (the main domain or a verified custom
+	# one). This prevents arbitrary-hostname cert abuse.
+	on_demand_tls {
+		ask http://web:80/tls-check
+	}
+}
+
+# Main application domain (explicit — always allowed).
 {$SITE_DOMAIN} {
 	encode zstd gzip
-
-	# Forward everything to the PHP/Apache container on the internal network.
-	# Caddy sets X-Forwarded-For / X-Forwarded-Proto automatically.
 	reverse_proxy web:80
-
-	# Small hardening niceties (app already sets most headers itself).
 	header {
 		-Server
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	}
+}
+
+# Enterprise custom domains: any hostname that passes the /tls-check ask.
+https:// {
+	tls {
+		on_demand
+	}
+	encode zstd gzip
+	reverse_proxy web:80
+	header -Server
 }

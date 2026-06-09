@@ -48,7 +48,7 @@ function is_admin(array $user)
 /** True if the user is on an active paid plan (Pro or Premium). */
 function plan_is_paid(array $user)
 {
-    return in_array($user['plan'], array('pro', 'premium'), true);
+    return in_array($user['plan'], array('pro', 'premium', 'enterprise'), true);
 }
 
 // --- Trial state -------------------------------------------------------------

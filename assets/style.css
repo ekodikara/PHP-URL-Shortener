@@ -218,7 +218,7 @@ input::placeholder { color: var(--ink-faint); }
 
 .save-note { visibility: hidden; font-size: 0.78rem; color: var(--accent-2); margin: -8px 0 0; min-height: 1.1em; }
 
-.plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
 .plan {
   border-radius: var(--radius); padding: 26px 24px; position: relative;
   display: flex; flex-direction: column;

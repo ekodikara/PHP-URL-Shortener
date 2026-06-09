@@ -91,6 +91,19 @@ define('SUSPICION_WINDOW', 3600);
 // users.is_admin column.
 define('ADMIN_EMAILS', getenv('ADMIN_EMAILS') ?: 'alice@example.com');
 
+// --- Enterprise SSO (env-gated; active only when configured) ---------------
+// OIDC: set issuer (for discovery) OR the explicit endpoints, plus client creds.
+define('OIDC_CLIENT_ID', getenv('OIDC_CLIENT_ID') ?: '');
+define('OIDC_CLIENT_SECRET', getenv('OIDC_CLIENT_SECRET') ?: '');
+define('OIDC_ISSUER', getenv('OIDC_ISSUER') ?: '');            // e.g. https://accounts.google.com
+define('OIDC_AUTH_URL', getenv('OIDC_AUTH_URL') ?: '');        // optional explicit endpoints
+define('OIDC_TOKEN_URL', getenv('OIDC_TOKEN_URL') ?: '');
+define('OIDC_USERINFO_URL', getenv('OIDC_USERINFO_URL') ?: '');
+// SAML 2.0: identity-provider metadata.
+define('SAML_IDP_ENTITY_ID', getenv('SAML_IDP_ENTITY_ID') ?: '');
+define('SAML_IDP_SSO_URL', getenv('SAML_IDP_SSO_URL') ?: '');
+define('SAML_IDP_CERT', getenv('SAML_IDP_CERT') ?: '');        // IdP x509 cert (PEM body)
+
 // ---------------------------------------------------------------------------
 // Plans
 //   url_limit         : max new links per limit_period (null = unlimited)
@@ -131,6 +144,17 @@ $GLOBALS['PLANS'] = array(
         'is_trial'          => false,
         'blurb'        => 'Unlimited links, your own names.',
     ),
+    'enterprise' => array(
+        'name'         => 'Enterprise',
+        'price'             => null,  // custom — contact sales, not self-serve
+        'url_limit'         => null,  // unlimited
+        'limit_period'      => 'total',
+        'monthly_visit_cap' => null,  // unlimited visits
+        'custom_slugs'      => null,  // unlimited custom names
+        'is_trial'          => false,
+        'contact'           => true,  // "Contact sales", no Stripe checkout
+        'blurb'        => 'Custom domains, SSO & everything in Premium.',
+    ),
 );
 
 function plan_config($plan)
@@ -145,4 +169,5 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'favicon', 'robots', 'api', 'admin', 'cache', 'me', 'account', 'pricing',
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
+    'enterprise', 'domains', 'sso', 'tls-check',
 );

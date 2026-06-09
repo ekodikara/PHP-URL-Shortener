@@ -30,11 +30,16 @@ if (($gate = captcha_gate($pdo, 'shorten')) !== '') {
     redirect_to('dashboard');
 }
 
+// If created while browsing a verified custom domain, scope the link to it.
+$cur_domain = current_domain($pdo);
+$domain_id = ($cur_domain && (int) $cur_domain['user_id'] === (int) $user['id']) ? (int) $cur_domain['id'] : null;
+
 list($row, $error) = create_short_url(
     $pdo,
     $user,
     isset($_POST['longurl']) ? $_POST['longurl'] : '',
-    isset($_POST['slug']) ? $_POST['slug'] : ''
+    isset($_POST['slug']) ? $_POST['slug'] : '',
+    $domain_id
 );
 
 if ($error) {
