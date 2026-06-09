@@ -1,56 +1,74 @@
 <?php
 /*
- * First authored by Brian Cray
- * License: http://creativecommons.org/licenses/by/3.0/
- * Contact the author at http://briancray.com/
+ * Snip — resolve a short code and redirect, counting the visit.
  */
+require __DIR__ . '/inc/bootstrap.php';
 
-ini_set('display_errors', 0);
+$code = isset($_GET['code']) ? $_GET['code'] : (isset($_GET['url']) ? $_GET['url'] : '');
 
-if(!preg_match('|^[0-9a-zA-Z]{1,6}$|', $_GET['url']))
-{
-	die('That is not a valid short url');
+// Codes are random (CODE_LENGTH) or custom slugs (3–40 of [A-Za-z0-9_-]).
+if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', (string) $code)) {
+    http_response_code(404);
+    die('That is not a valid short link.');
 }
 
-require('config.php');
+// Pull the link plus the owner (for the account-wide monthly visit cap).
+$stmt = $pdo->prepare(
+    'SELECT u.id, u.long_url, u.blocked AS link_blocked, usr.id AS owner_id, usr.plan, usr.blocked AS owner_blocked, usr.month_visits, usr.visit_month
+       FROM urls u
+       JOIN users usr ON usr.id = u.user_id
+      WHERE u.code = ?'
+);
+$stmt->execute(array($code));
+$link = $stmt->fetch();
 
-$shortened_id = getIDFromShortenedURL($_GET['url']);
-
-if(CACHE)
-{
-	$long_url = file_get_contents(CACHE_DIR . $shortened_id);
-	if(empty($long_url) || !preg_match('|^https?://|', $long_url))
-	{
-		$long_url = mysql_result(mysql_query('SELECT long_url FROM ' . DB_TABLE . ' WHERE id="' . mysql_real_escape_string($shortened_id) . '"'), 0, 0);
-		@mkdir(CACHE_DIR, 0777);
-		$handle = fopen(CACHE_DIR . $shortened_id, 'w+');
-		fwrite($handle, $long_url);
-		fclose($handle);
-	}
-}
-else
-{
-	$long_url = mysql_result(mysql_query('SELECT long_url FROM ' . DB_TABLE . ' WHERE id="' . mysql_real_escape_string($shortened_id) . '"'), 0, 0);
+if (!$link) {
+    http_response_code(404);
+    die('Short link not found.');
 }
 
-if(TRACK)
-{
-	mysql_query('UPDATE ' . DB_TABLE . ' SET referrals=referrals+1 WHERE id="' . mysql_real_escape_string($shortened_id) . '"');
+// Record who is accessing this link (security review): ip, browser, platform…
+log_access($pdo, 'redirect', $code, $link['owner_id']);
+
+// Disabled link or suspended owner → gone.
+if (!empty($link['link_blocked']) || !empty($link['owner_blocked'])) {
+    http_response_code(410);
+    die('This link has been disabled.');
 }
 
-header('HTTP/1.1 301 Moved Permanently');
-header('Location: ' .  $long_url);
+// Defense in depth: never redirect to anything but http(s).
+if (!preg_match('|^https?://|i', $link['long_url'])) {
+    http_response_code(404);
+    die('Short link not found.');
+}
+
+// Account-wide monthly visit cap (e.g. free trial = 50/month; paid = unlimited).
+$cap = plan_config($link['plan'])['monthly_visit_cap'];
+if ($cap !== null) {
+    $month = date('Y-m');
+    $used = ($link['visit_month'] === $month) ? (int) $link['month_visits'] : 0;
+    if ($used >= $cap) {
+        http_response_code(410);
+        die('This account has reached its monthly visit limit. The owner can upgrade for unlimited visits.');
+    }
+    // Increment the owner's monthly counter, resetting it when the month rolls over.
+    try {
+        $mv = $pdo->prepare(
+            'UPDATE users SET month_visits = IF(visit_month = ?, month_visits + 1, 1), visit_month = ? WHERE id = ?'
+        );
+        $mv->execute(array($month, $month, $link['owner_id']));
+    } catch (PDOException $e) {
+        error_log('monthly visit count failed: ' . $e->getMessage());
+    }
+}
+
+// Count the visit on the link (best-effort, lifetime counter).
+try {
+    $upd = $pdo->prepare('UPDATE urls SET clicks = clicks + 1 WHERE id = ?');
+    $upd->execute(array($link['id']));
+} catch (PDOException $e) {
+    error_log('click count failed: ' . $e->getMessage());
+}
+
+header('Location: ' . $link['long_url'], true, 301);
 exit;
-
-function getIDFromShortenedURL ($string, $base = ALLOWED_CHARS)
-{
-	$length = strlen($base);
-	$size = strlen($string) - 1;
-	$string = str_split($string);
-	$out = strpos($base, array_pop($string));
-	foreach($string as $i => $char)
-	{
-		$out += strpos($base, $char) * pow($length, $size - $i);
-	}
-	return $out;
-}

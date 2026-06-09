@@ -1,0 +1,42 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8088:80"
+    # Stripe keys (and any other secrets) come from the git-ignored .env file.
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_NAME: shortener
+      DB_USER: shortener
+      DB_PASSWORD: shortener_pass
+      DB_TABLE: shortenedurls
+      # Set this to your public URL (with trailing slash) in production,
+      # e.g. https://sho.rt/  — leave blank to derive from the request host.
+      SITE_HOST: ""
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: shortener
+      MYSQL_USER: shortener
+      MYSQL_PASSWORD: shortener_pass
+      MYSQL_ROOT_PASSWORD: root_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      # schema.sql is auto-loaded on first startup
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:

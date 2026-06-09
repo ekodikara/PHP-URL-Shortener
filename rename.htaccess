@@ -1,8 +1,5 @@
 DirectoryIndex index.php
 
-# remove the next 3 lines if you see a 500 server error
-php_flag register_globals off
-php_flag magic_quotes_gpc off
 php_value display_errors 0
 
 FileETag none
@@ -10,8 +7,47 @@ ServerSignature Off
 
 Options All -Indexes
 
+# --- Spoof server fingerprint headers (look like Windows Azure / IIS) -------
+# The real "Server" header is rewritten to Microsoft-IIS/10.0 by mod_security
+# (see Dockerfile). Here we drop PHP's real X-Powered-By and add ASP.NET-style
+# headers so the stack looks like a Microsoft / Azure deployment.
+<IfModule mod_headers.c>
+  Header always unset X-Powered-By
+  Header always set X-Powered-By "ASP.NET"
+  Header always set X-AspNet-Version "4.0.30319"
+  Header always set X-Azure-Ref "0Rn2dZQAAAAB"
+</IfModule>
+
+# Preserve the Authorization header for the MCP API (bearer tokens)
+<IfModule mod_setenvif.c>
+  SetEnvIfNoCase Authorization "(.+)" HTTP_AUTHORIZATION=$1
+</IfModule>
+
+# --- Protect includes and raw config from direct web access -----------------
+<FilesMatch "\.(sql)$">
+  Require all denied
+</FilesMatch>
+RedirectMatch 404 ^/inc/
+
 <IfModule mod_rewrite.c>
 RewriteEngine On
-RewriteRule ^shorten/(.*)$ shorten.php?longurl=$1 [L]
-RewriteRule ^([0-9a-zA-Z]{1,6})$ redirect.php?url=$1 [L]
+
+# Hide PHP entirely: any DIRECT request for a *.php URL returns 404, as if no
+# PHP files exist (consistent with the IIS/ASP.NET disguise). The condition
+# matches the literal browser request line (THE_REQUEST), so the internal
+# /page -> page.php rewrites below are NOT affected — only outside requests are.
+RewriteCond %{THE_REQUEST} \s/+[^?\s]+\.php[\s?] [NC]
+RewriteRule \.php$ - [R=404,L]
+
+# Serve real files and directories as-is (assets, etc.)
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Extensionless page routing: /dashboard -> dashboard.php (when that file exists)
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [L]
+
+# Everything else is treated as a short code -> redirect.php
+RewriteRule ^([A-Za-z0-9_-]{1,40})$ redirect.php?code=$1 [L,QSA]
 </IfModule>

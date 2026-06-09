@@ -1,0 +1,17 @@
+# Snip — Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
+# SITE_DOMAIN is provided by docker-compose.prod.yml (e.g. sho.rt).
+# Use ":80" as the domain for a quick no-TLS local prod test.
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# Forward everything to the PHP/Apache container on the internal network.
+	# Caddy sets X-Forwarded-For / X-Forwarded-Proto automatically.
+	reverse_proxy web:80
+
+	# Small hardening niceties (app already sets most headers itself).
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+}

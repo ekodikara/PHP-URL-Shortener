@@ -1,65 +1,57 @@
 <?php
 /*
- * First authored by Brian Cray
- * License: http://creativecommons.org/licenses/by/3.0/
- * Contact the author at http://briancray.com/
+ * Snip — create a short link (AJAX or form POST). Requires login.
  */
- 
-ini_set('display_errors', 0);
+require __DIR__ . '/inc/bootstrap.php';
 
-$url_to_shorten = get_magic_quotes_gpc() ? stripslashes(trim($_REQUEST['longurl'])) : trim($_REQUEST['longurl']);
-
-if(!empty($url_to_shorten) && preg_match('|^https?://|', $url_to_shorten))
-{
-	require('config.php');
-
-	// check if the client IP is allowed to shorten
-	if($_SERVER['REMOTE_ADDR'] != LIMIT_TO_IP)
-	{
-		die('You are not allowed to shorten URLs with this service.');
-	}
-	
-	// check if the URL is valid
-	if(CHECK_URL)
-	{
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url_to_shorten);
-		curl_setopt($ch,  CURLOPT_RETURNTRANSFER, TRUE);
-		$response = curl_exec($ch);
-		$response_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-		curl_close($ch);
-		if($response_status == '404')
-		{
-			die('Not a valid URL');
-		}
-		
-	}
-	
-	// check if the URL has already been shortened
-	$already_shortened = mysql_result(mysql_query('SELECT id FROM ' . DB_TABLE. ' WHERE long_url="' . mysql_real_escape_string($url_to_shorten) . '"'), 0, 0);
-	if(!empty($already_shortened))
-	{
-		// URL has already been shortened
-		$shortened_url = getShortenedURLFromID($already_shortened);
-	}
-	else
-	{
-		// URL not in database, insert
-		mysql_query('LOCK TABLES ' . DB_TABLE . ' WRITE;');
-		mysql_query('INSERT INTO ' . DB_TABLE . ' (long_url, created, creator) VALUES ("' . mysql_real_escape_string($url_to_shorten) . '", "' . time() . '", "' . mysql_real_escape_string($_SERVER['REMOTE_ADDR']) . '")');
-		$shortened_url = getShortenedURLFromID(mysql_insert_id());
-		mysql_query('UNLOCK TABLES');
-	}
-	echo BASE_HREF . $shortened_url;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    redirect_to('/');
 }
 
-function getShortenedURLFromID ($integer, $base = ALLOWED_CHARS)
-{
-	$length = strlen($base);
-	while($integer > $length - 1)
-	{
-		$out = $base[fmod($integer, $length)] . $out;
-		$integer = floor( $integer / $length );
-	}
-	return $base[$integer] . $out;
+$user = current_user();
+if (!$user) {
+    if (wants_json()) {
+        json_response(array('error' => 'Please log in to create links.'), 401);
+    }
+    redirect_to('login');
 }
+
+csrf_check();
+
+// Suspicious clients must solve a captcha before creating links.
+if (($gate = captcha_gate($pdo, 'shorten')) !== '') {
+    $msg = $gate === 'captcha'
+        ? 'Please complete the verification to continue.'
+        : 'Suspicious activity detected. Please try again later.';
+    if (wants_json()) {
+        json_response(array('error' => $msg, 'captcha' => ($gate === 'captcha')), 403);
+    }
+    set_flash('error', $msg);
+    redirect_to('dashboard');
+}
+
+list($row, $error) = create_short_url(
+    $pdo,
+    $user,
+    isset($_POST['longurl']) ? $_POST['longurl'] : '',
+    isset($_POST['slug']) ? $_POST['slug'] : ''
+);
+
+if ($error) {
+    if (wants_json()) {
+        json_response(array('error' => $error), 422);
+    }
+    set_flash('error', $error);
+    redirect_to('dashboard');
+}
+
+if (wants_json()) {
+    json_response(array(
+        'short_url' => $row['short_url'],
+        'code'      => $row['code'],
+        'reload'    => true,
+    ));
+}
+
+set_flash('success', 'Short link created: ' . $row['short_url']);
+redirect_to('dashboard');

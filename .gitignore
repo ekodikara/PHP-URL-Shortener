@@ -1,0 +1,17 @@
+# Local secrets / credentials — never commit
+CREDENTIALS.local.md
+*.local.md
+*.local.txt
+.env
+.env.*
+
+# Runtime
+cache/
+
+# Composer dependencies (installed in the Docker image)
+vendor/
+composer.lock
+
+# OS / editor
+.DS_Store
+*.swp

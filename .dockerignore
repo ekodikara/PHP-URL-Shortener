@@ -1,0 +1,9 @@
+.git
+.gitignore
+cache/
+*.md
+README
+.env
+.env.*
+vendor/
+CREDENTIALS.local.md

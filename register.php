@@ -1,0 +1,74 @@
+<?php
+/*
+ * Snip — registration.
+ */
+require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/inc/layout.php';
+
+if (current_user()) {
+    redirect_to('dashboard');
+}
+
+$error = '';
+$email = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $email = isset($_POST['email']) ? $_POST['email'] : '';
+    $password = isset($_POST['password']) ? $_POST['password'] : '';
+
+    // Throttle account creation per IP.
+    if (!rate_limit($pdo, 'register:' . client_ip(), 5, 3600)) {
+        log_security_event($pdo, 'rate_limited', 'register');
+        http_response_code(429);
+        $error = 'Too many sign-up attempts. Please try again later.';
+    } elseif (($why = form_guard_check($pdo)) !== '') {
+        // Looks automated — block and record it.
+        log_security_event($pdo, 'bot_blocked', 'register:' . $why);
+        http_response_code(403);
+        $error = 'We couldn\'t verify your request. Please enable JavaScript and try again.';
+    } elseif (($gate = captcha_gate($pdo, 'register')) !== '') {
+        http_response_code(403);
+        $error = $gate === 'captcha'
+            ? 'Please complete the verification below and try again.'
+            : 'Suspicious activity detected. Please try again later.';
+    } else {
+        list($uid, $error) = register_user($pdo, $email, $password);
+        if ($uid) {
+            log_security_event($pdo, 'register', $email, $uid);
+            establish_session($uid);
+            set_flash('success', 'Welcome to ' . APP_NAME . '! Your ' . TRIAL_DAYS . '-day free trial has started.');
+            redirect_to('dashboard');
+        }
+    }
+}
+
+render_header('Create account');
+?>
+<div class="auth-wrap">
+  <div class="card glass">
+    <h1>Create your account</h1>
+    <p class="sub"><?= e(TRIAL_DAYS) ?>-day free trial — 20 links total, no card required.</p>
+
+    <?php if ($error): ?><div class="form-error"><?= e($error) ?></div><?php endif; ?>
+
+    <form method="post" action="register">
+      <?= csrf_field() ?>
+      <?= form_guard_fields() ?>
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" value="<?= e($email) ?>" required autofocus>
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" minlength="8" required>
+        <p class="hint">At least 8 characters.</p>
+      </div>
+      <?php if (captcha_needed($pdo)): ?><?= recaptcha_block() ?><?php endif; ?>
+      <button class="btn btn-solid btn-block" type="submit">Create account</button>
+    </form>
+
+    <p class="auth-alt">Already have an account? <a href="login">Log in</a></p>
+  </div>
+</div>
+<?php render_footer(); ?>

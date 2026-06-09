@@ -1,0 +1,63 @@
+# Snip — production stack: Caddy (TLS) → web (PHP/Apache) → db (MySQL).
+# Secrets come from .env (git-ignored). Bring up with:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Required .env keys: SITE_DOMAIN, SITE_HOST, DB_PASSWORD, DB_ROOT_PASSWORD
+# (plus STRIPE_*, RECAPTCHA_*, ADMIN_EMAILS, etc.). TRUSTED_PROXIES defaults to
+# 'private' so the real client IP is read from Caddy's X-Forwarded-For.
+
+services:
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - web
+    restart: unless-stopped
+
+  web:
+    build: .
+    expose:
+      - "80"            # internal only — NOT published to the host
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      DB_NAME: shortener
+      DB_USER: shortener
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      SITE_HOST: ${SITE_HOST:?set SITE_HOST in .env}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-private}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: shortener
+      MYSQL_USER: shortener
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?set DB_ROOT_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
