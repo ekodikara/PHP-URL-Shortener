@@ -35,6 +35,10 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in .env}
       SITE_HOST: ${SITE_HOST:?set SITE_HOST in .env}
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:-private}
+      # reCAPTCHA must be explicitly set in prod (blank = adaptive challenge
+      # fails CLOSED, blocking suspicious clients rather than waving them through).
+      RECAPTCHA_SITE_KEY: ${RECAPTCHA_SITE_KEY:?set RECAPTCHA_SITE_KEY in .env (or empty to fail-closed)}
+      RECAPTCHA_SECRET: ${RECAPTCHA_SECRET:?set RECAPTCHA_SECRET in .env (or empty to fail-closed)}
     depends_on:
       db:
         condition: service_healthy

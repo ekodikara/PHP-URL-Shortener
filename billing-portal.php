@@ -10,6 +10,13 @@ require __DIR__ . '/inc/stripe.php';
 require_login();
 $user = current_user();
 
+// CSRF: require the per-session token so a cross-site request can't spin up a
+// billing-portal redirect for the victim.
+$token = isset($_POST['csrf']) ? $_POST['csrf'] : (isset($_GET['t']) ? $_GET['t'] : '');
+if (!hash_equals(csrf_token(), (string) $token)) {
+    redirect_to('dashboard');
+}
+
 if (empty($user['stripe_customer_id']) || !stripe_ready()) {
     set_flash('error', 'You don\'t have a billing account yet.');
     redirect_to('upgrade');

@@ -20,10 +20,14 @@ if ($session_id !== '' && stripe_ready()) {
             'id'     => $session_id,
             'expand' => array('subscription'),
         ));
-        // Only act on this user's own, completed & paid session.
+        // The subscription must actually be active/trialing (not incomplete/past_due).
+        $sub_status = is_object($session->subscription) ? $session->subscription->status : null;
+        $sub_ok = in_array($sub_status, array('active', 'trialing'), true);
+        // Only act on this user's own, completed & paid session with an active sub.
         if ((string) $session->metadata->user_id === (string) $user['id']
             && $session->status === 'complete'
-            && $session->payment_status === 'paid') {
+            && $session->payment_status === 'paid'
+            && $sub_ok) {
             $sub_id = is_object($session->subscription) ? $session->subscription->id : $session->subscription;
             activate_subscription(
                 $pdo,

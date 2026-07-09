@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `is_admin`               TINYINT(1) NOT NULL DEFAULT 0,
   `blocked`                TINYINT(1) NOT NULL DEFAULT 0,
   `blocked_reason`         VARCHAR(255) NULL DEFAULT NULL,
+  `auth_provider`          ENUM('password','oidc','saml') NOT NULL DEFAULT 'password',
+  `sso_subject`            VARCHAR(255) NULL DEFAULT NULL,
   `created`                INT UNSIGNED NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`),
@@ -55,6 +57,13 @@ CREATE TABLE IF NOT EXISTS `rate_limits` (
   `count`        INT UNSIGNED NOT NULL DEFAULT 0,
   `window_start` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`rl_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Processed Stripe webhook event ids (idempotency / replay protection).
+CREATE TABLE IF NOT EXISTS `stripe_events` (
+  `event_id` VARCHAR(255) NOT NULL,
+  `ts`       INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`event_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Cached IP reputation (VPN/proxy) from IPQualityScore.

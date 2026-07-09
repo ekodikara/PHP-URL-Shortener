@@ -40,7 +40,7 @@ render_header('Dashboard');
       <a class="btn btn-ghost" href="connect">Connect AI</a>
     <?php endif; ?>
     <?php if (!$plan['is_trial'] && !empty($user['stripe_customer_id'])): ?>
-      <a class="btn btn-ghost" href="billing-portal">Manage billing</a>
+      <a class="btn btn-ghost" href="billing-portal?t=<?= e(csrf_token()) ?>">Manage billing</a>
     <?php endif; ?>
     <a class="btn btn-ghost" href="upgrade">Plans →</a>
   </div>

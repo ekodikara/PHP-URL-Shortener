@@ -52,6 +52,11 @@ function add_domain(PDO $pdo, $user_id, $host)
     if (!preg_match('/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/', $host)) {
         return array(null, 'Enter a valid domain, e.g. go.acme.com');
     }
+    // Never let a tenant claim the main application host (tenant-routing capture).
+    $main = SITE_HOST !== '' ? strtolower((string) parse_url(SITE_HOST, PHP_URL_HOST)) : '';
+    if ($main !== '' && $host === $main) {
+        return array(null, 'That domain is not available.');
+    }
     $stmt = $pdo->prepare('SELECT 1 FROM domains WHERE host = ?');
     $stmt->execute(array($host));
     if ($stmt->fetch()) {

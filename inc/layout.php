@@ -41,7 +41,7 @@ function render_header($title = '')
       <?php else: ?>
         <span class="plan-pill plan-<?= e($u['plan']) ?>"><?= e(plan_config($u['plan'])['name']) ?></span>
       <?php endif; ?>
-      <a class="btn btn-ghost" href="logout">Sign out</a>
+      <a class="btn btn-ghost" href="logout?t=<?= e(csrf_token()) ?>">Sign out</a>
     <?php else: ?>
       <a href="login">Log in</a>
       <a class="btn btn-solid" href="register">Get started</a>
@@ -114,7 +114,7 @@ function render_plans($current = null)
       <?php elseif ($is_current && $is_trial): ?>
         <button class="btn btn-ghost btn-block" disabled><?= trial_active($u) ? trial_days_left($u) . ' day' . (trial_days_left($u) === 1 ? '' : 's') . ' left' : 'Trial ended' ?></button>
       <?php elseif ($is_current): ?>
-        <a class="btn btn-ghost btn-block" href="billing-portal">Manage billing</a>
+        <a class="btn btn-ghost btn-block" href="billing-portal?t=<?= e(csrf_token()) ?>">Manage billing</a>
       <?php elseif ($is_trial): ?>
         <?php if ($u): ?>
           <button class="btn btn-ghost btn-block" disabled>New accounts only</button>
@@ -143,7 +143,7 @@ function render_footer()
   <span><?= e(APP_NAME) ?> — <?= e(APP_TAGLINE) ?></span>
   <span class="foot-dim">Tie down long URLs.</span>
 </footer>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="assets/app.js?v=<?= e(@filemtime(__DIR__ . '/../assets/app.js') ?: '1') ?>"></script>
 </body>
 </html>
