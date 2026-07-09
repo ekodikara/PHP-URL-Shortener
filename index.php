@@ -14,6 +14,18 @@ render_header();
   <p><?= e(APP_NAME) ?> turns sprawling URLs into short, shareable links — with QR codes, click stats, and your own custom names.</p>
 </section>
 
+<div class="snip-demo glass" aria-hidden="true">
+  <div class="snip-row snip-long">
+    <span class="snip-tag">Long</span>
+    <span class="snip-url">example.com/2026/spring/product-launch/announcement?ref=newsletter&amp;utm_campaign=q2</span>
+  </div>
+  <div class="snip-perf"><span class="snip-scissors">✂</span></div>
+  <div class="snip-row snip-short">
+    <span class="snip-tag short">Snipped</span>
+    <span class="snip-result"><?= e(preg_replace('|^https?://|', '', BASE_HREF)) ?>q2-launch</span>
+  </div>
+</div>
+
 <div class="card glass shorten-card">
 <?php if ($user): ?>
   <h2>New short link</h2>

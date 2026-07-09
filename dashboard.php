@@ -19,7 +19,17 @@ $stmt->execute(array($user['id']));
 $links = $stmt->fetchAll();
 
 $total_clicks = 0;
-foreach ($links as $l) { $total_clicks += (int) $l['clicks']; }
+$custom_count = 0;
+$max_clicks = 0;
+$top = null;
+foreach ($links as $l) {
+    $c = (int) $l['clicks'];
+    $total_clicks += $c;
+    if ($l['is_custom']) { $custom_count++; }
+    if ($c > $max_clicks) { $max_clicks = $c; }
+    if ($top === null || $c > (int) $top['clicks']) { $top = $l; }
+}
+$custom_limit = $plan['custom_slugs']; // null = unlimited, 0 = not allowed
 
 render_header('Dashboard');
 ?>
@@ -45,6 +55,38 @@ render_header('Dashboard');
     <a class="btn btn-ghost" href="upgrade">Plans →</a>
   </div>
 </section>
+
+<?php if ($links): ?>
+<section class="stat-row">
+  <div class="stat glass">
+    <div class="k">Links</div>
+    <div class="v"><?= number_format(count($links)) ?></div>
+    <div class="s"><?= $limit === null ? 'unlimited' : $used . ' / ' . $limit . ' used' ?></div>
+  </div>
+  <div class="stat glass">
+    <div class="k">Total clicks</div>
+    <div class="v"><?= number_format($total_clicks) ?></div>
+    <div class="s"><?= $total_clicks ? number_format($total_clicks / max(1, count($links)), 1) . ' avg / link' : 'no clicks yet' ?></div>
+  </div>
+  <?php if ($custom_limit === null || $custom_limit > 0): ?>
+  <div class="stat glass">
+    <div class="k">Custom names</div>
+    <div class="v"><?= number_format($custom_count) ?></div>
+    <div class="s"><?= $custom_limit === null ? 'unlimited' : $custom_count . ' / ' . $custom_limit ?></div>
+  </div>
+  <?php endif; ?>
+  <div class="stat glass">
+    <div class="k">Top link</div>
+    <?php if ($top && (int) $top['clicks'] > 0): ?>
+      <div class="v"><?= number_format((int) $top['clicks']) ?> <small>clicks</small></div>
+      <div class="s">/<?= e($top['code']) ?></div>
+    <?php else: ?>
+      <div class="v">—</div>
+      <div class="s">share a link to start</div>
+    <?php endif; ?>
+  </div>
+</section>
+<?php endif; ?>
 
 <div class="card glass">
   <h2>Create a short link</h2>
@@ -93,7 +135,13 @@ render_header('Dashboard');
           <?php if ($l['blocked']): ?><span class="custom-badge" style="color:var(--danger);border-color:rgba(255,93,108,0.4)">disabled</span><?php endif; ?>
         </td>
         <td class="long" title="<?= e($l['long_url']) ?>"><?= e($l['long_url']) ?></td>
-        <td class="clicks"><?= number_format((int) $l['clicks']) ?></td>
+        <td class="clicks">
+          <?php $cn = (int) $l['clicks']; $cw = $max_clicks > 0 ? round($cn / $max_clicks * 100) : 0; ?>
+          <div class="click-cell<?= $cn === 0 ? ' zero' : '' ?>">
+            <span class="n"><?= number_format($cn) ?></span>
+            <span class="cbar"><i style="width:<?= $cw ?>%"></i></span>
+          </div>
+        </td>
         <td>
           <div class="row-actions">
             <a class="icon-btn" href="<?= e($short) ?>" target="_blank" rel="noopener" title="Open">↗</a>
