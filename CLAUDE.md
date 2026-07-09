@@ -293,6 +293,24 @@ so paid users can drive it from AI assistants.
   NOTE: OIDC callback + SAML need a real IdP to exercise end-to-end; the
   initiation/gating/config paths are verified.
 
+## Lighthouse test pipeline
+
+Lighthouse audits `/`, `/login`, `/register`, `/enterprise` against score
+thresholds in **`lighthouserc.json`** (single source of truth: perf ≥ 80,
+a11y ≥ 90, best-practices ≥ 90 are errors; SEO is warn-only because the app
+intentionally serves `noindex`). Reports land in `.lighthouseci/reports/`
+(gitignored). Three ways to run, same config:
+
+- **Manual**: `scripts/lighthouse.sh` (app must be up on :8088;
+  `LIGHTHOUSE_BASE_URL=…` to audit another host).
+- **Auto on every commit**: `.githooks/post-commit` runs the script after each
+  commit. Enable once per clone with `git config core.hooksPath .githooks`;
+  skip one commit with `SKIP_LIGHTHOUSE=1 git commit …`. Never blocks the
+  commit — failures are reported to fix + amend.
+- **CI**: `.github/workflows/lighthouse.yml` — auto on every push, manual via
+  the Actions "Run workflow" button. Boots the compose stack, audits, uploads
+  the reports as an artifact.
+
 ## Known gaps / TODO
 
 - **Billing is demo-only**: `upgrade.php` flips the plan with no payment. Real

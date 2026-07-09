@@ -1,0 +1,22 @@
+#!/bin/sh
+#
+# Snip — auto Lighthouse check on every commit.
+#
+# Enable once per clone:   git config core.hooksPath .githooks
+# Skip for one commit:     SKIP_LIGHTHOUSE=1 git commit …
+#
+# post-commit never blocks the commit itself — a failing check is reported
+# loudly so you can fix and amend, and the same thresholds gate CI on push.
+#
+if [ -n "$SKIP_LIGHTHOUSE" ]; then
+  exit 0
+fi
+
+echo ""
+echo "✂ [post-commit] Lighthouse check for $(git rev-parse --short HEAD) (SKIP_LIGHTHOUSE=1 to skip)…"
+if scripts/lighthouse.sh; then
+  echo "✂ [post-commit] Lighthouse PASSED for $(git rev-parse --short HEAD)"
+else
+  echo ""
+  echo "✂ [post-commit] Lighthouse FAILED for $(git rev-parse --short HEAD) — fix and amend, or see .lighthouseci/reports/" >&2
+fi
