@@ -1,6 +1,6 @@
 <?php
 /*
- * Snip — shared page shell ("paper" theme: flat, organic, printed-matter).
+ * Snip — shared page shell (flat neutral theme with light + dark modes).
  */
 
 function render_header($title = '')
@@ -15,6 +15,7 @@ function render_header($title = '')
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= e($full_title) ?></title>
+<script>/* set theme before paint (no flash of wrong mode) */(function(){try{var t=localStorage.getItem('snip-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Archivo+Expanded:wght@600;700;800;900&family=Hanken+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
@@ -27,6 +28,9 @@ function render_header($title = '')
     <span class="brand-mark">✂</span><span class="brand-name"><?= e(APP_NAME) ?></span>
   </a>
   <nav class="nav-links">
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch between light and dark mode" title="Light / dark">
+      <span class="moon" aria-hidden="true">☾</span><span class="sun" aria-hidden="true">☀</span>
+    </button>
     <a href="/#pricing">Pricing</a>
     <?php if ($u): ?>
       <a href="dashboard">Dashboard</a>

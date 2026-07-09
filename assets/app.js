@@ -45,6 +45,23 @@
     });
   }
 
+  // Light/dark toggle. Effective theme = explicit choice, else OS preference.
+  // The choice is persisted and applied pre-paint by an inline <head> script.
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var root = document.documentElement;
+      var explicit = root.getAttribute('data-theme');
+      var dark = explicit
+        ? explicit === 'dark'
+        : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      themeBtn.setAttribute('data-mode', next);
+      try { localStorage.setItem('snip-theme', next); } catch (e) {}
+    });
+  }
+
   // Anti-bot JS-proof: real browsers set this; scripted clients that don't run
   // JS leave it empty and are rejected server-side.
   document.querySelectorAll('input[name=js_ok]').forEach(function (i) { i.value = '1'; });

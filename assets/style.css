@@ -1,24 +1,29 @@
-/* Snip — "paper": the whole app happens on a cutting desk, in daylight.
-   Flat + organic: solid kraft/paper surfaces, printed-ink rules, one hot
-   vermilion accent for the cut. No glass, no blur, no gradients, no grids. */
+/* Snip — neutral flat theme with LIGHT + DARK modes.
+   Same "cut / stub / measure" signature, re-skinned onto a neutral surface
+   system. Light is the default; dark applies via OS preference AND a manual
+   toggle. Token NAMES are kept stable so every rule below is theme-agnostic —
+   only these values change between modes. Every text/surface/accent pair is
+   checked for WCAG AA (>=4.5:1). Vermilion stays as the single brand accent
+   (the "cut"), tuned per mode so it passes AA as both fill and text. */
 
-:root {
-  --desk:      #eae0c9;   /* kraft desk (page background)   */
-  --paper:     #f6f0e1;   /* paper sheet (panels)           */
-  --paper-2:   #fffbef;   /* brightest stub paper           */
-  --kraft:     #e0d2b0;   /* deeper kraft (bench, wells)    */
+:root, :root[data-theme="light"] {
+  --desk:      #f4f4f3;   /* page background  */
+  --paper:     #ffffff;   /* card surface     */
+  --paper-2:   #fafafa;   /* raised / on-accent text (near-white)   */
+  --kraft:     #ececea;   /* wells, meter track, prefix */
 
-  --ink:       #2a2118;   /* warm printer's ink             */
-  --ink-dim:   #5b5040;   /* secondary text (AA on paper)   */
-  --ink-faint: #6f6350;   /* tertiary text (still ≥4.5:1)   */
+  --ink:       #18191c;   /* primary text     */
+  --ink-dim:   #55595f;   /* secondary (~7:1) */
+  --ink-faint: #6b7077;   /* tertiary (~4.6:1 on desk) */
 
-  --accent:    #e14b2a;   /* vermilion — the cut, actions   */
-  --accent-2:  #b07d2b;   /* ochre — secondary badges       */
-  --mark:      #4e7a5a;   /* moss — measurement, meters     */
-  --danger:    #a31f34;   /* deep crimson — destructive     */
+  --accent:    #c1361c;   /* brand vermilion — AA both as fill (paper-2 text)
+                             and as link text on white/desk */
+  --accent-2:  #8a5a12;   /* ochre — secondary badges/status (AA on white) */
+  --mark:      #2f7d4f;   /* green — success / measurement (AA on white) */
+  --danger:    #b3261e;
 
-  --rule:      rgba(42, 33, 24, 0.18);   /* printed hairline */
-  --rule-hi:   rgba(42, 33, 24, 0.36);
+  --rule:      rgba(20, 22, 26, 0.12);
+  --rule-hi:   rgba(20, 22, 26, 0.22);
 
   --radius:   10px;
   --radius-s: 7px;
@@ -27,8 +32,7 @@
   --font-body:    "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono:    "Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* legacy aliases — old token names still referenced in odd corners resolve
-     to their nearest paper-theme equivalent instead of silently breaking */
+  /* legacy aliases so any stray old token name still resolves */
   --stroke:    var(--rule);
   --stroke-hi: var(--rule-hi);
   --glass:     var(--paper);
@@ -36,6 +40,50 @@
   --accent-3:  var(--mark);
   --paper-ink: var(--ink);
 }
+
+/* DARK — OS preference (unless the user has explicitly chosen light) */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk:      #14151a;
+    --paper:     #1c1e25;
+    --paper-2:   #23262e;   /* on bright accent this reads as dark text → AA */
+    --kraft:     #2a2e37;
+
+    --ink:       #eceef2;
+    --ink-dim:   #aab1bc;   /* ~7:1 on desk */
+    --ink-faint: #868d99;   /* ~4.7:1 on desk */
+
+    --accent:    #ff6a4d;   /* brighter for dark — AA as text on desk + as fill */
+    --accent-2:  #e0a54a;
+    --mark:      #5cc98a;
+    --danger:    #ff6b74;
+
+    --rule:      rgba(236, 238, 242, 0.11);
+    --rule-hi:   rgba(236, 238, 242, 0.22);
+  }
+}
+
+/* DARK — explicit manual toggle (wins over the media query in both directions) */
+:root[data-theme="dark"] {
+  --desk:      #14151a;
+  --paper:     #1c1e25;
+  --paper-2:   #23262e;
+  --kraft:     #2a2e37;
+
+  --ink:       #eceef2;
+  --ink-dim:   #aab1bc;
+  --ink-faint: #868d99;
+
+  --accent:    #ff6a4d;
+  --accent-2:  #e0a54a;
+  --mark:      #5cc98a;
+  --danger:    #ff6b74;
+
+  --rule:      rgba(236, 238, 242, 0.11);
+  --rule-hi:   rgba(236, 238, 242, 0.22);
+}
+
+html { color-scheme: light dark; }
 
 * { box-sizing: border-box; }
 
@@ -89,6 +137,25 @@ body {
 .nav-links { display: flex; align-items: center; gap: 18px; }
 .nav-links a { color: var(--ink-dim); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: color 0.15s; }
 .nav-links a:hover { color: var(--ink); }
+
+/* light/dark toggle — a small paper switch */
+.theme-toggle {
+  display: inline-grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 8px; border: 1px solid var(--rule-hi); background: var(--paper);
+  color: var(--ink-dim); cursor: pointer; font-size: 1rem; line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+.theme-toggle:hover { color: var(--ink); border-color: var(--ink); }
+.theme-toggle .sun { display: none; }
+.theme-toggle .moon { display: block; }
+:root[data-theme="dark"] .theme-toggle .sun,
+.theme-toggle[data-mode="dark"] .sun { display: block; }
+:root[data-theme="dark"] .theme-toggle .moon,
+.theme-toggle[data-mode="dark"] .moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle .sun { display: block; }
+  :root:not([data-theme="light"]) .theme-toggle .moon { display: none; }
+}
 
 .plan-pill {
   font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
@@ -385,7 +452,7 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
 }
 .bench-note {
   margin: 14px 0 0; text-align: center; font-family: var(--font-mono); font-size: 0.72rem;
-  color: var(--mark); letter-spacing: 0.02em;
+  color: var(--ink-dim); letter-spacing: 0.02em;
   opacity: 0; animation: cut-reveal 0.5s 1.5s ease forwards;
 }
 .bench-note b { color: var(--ink); font-weight: 700; }
