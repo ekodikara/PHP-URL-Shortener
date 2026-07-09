@@ -39,18 +39,18 @@ $ip_hint = isset($_SERVER['SERVER_ADDR']) ? $_SERVER['SERVER_ADDR'] : 'your-serv
 
 render_header('Custom domains');
 ?>
-<section class="hero" style="padding:36px 0 8px">
+<section class="hero hero-sub">
   <h1>Custom <span class="grad">domains</span></h1>
   <p>Serve your short links from your own branded domain, e.g. <code>go.acme.com/launch</code>.</p>
 </section>
 
 <?php if ($added): ?>
-<div class="card glass" style="border-color:rgba(182,255,60,0.5)">
+<div class="card glass card-todo">
   <h2>Verify <?= e($added['host']) ?></h2>
   <p class="sub">1) Point the domain at this app — add a DNS <strong>A/CNAME</strong> record to your server.<br>
      2) Add a DNS <strong>TXT</strong> record on <code><?= e($added['host']) ?></code> with this value, then click Verify:</p>
-  <div class="result-inner"><div class="result-link"><div class="url" style="font-size:1rem"><?= e($added['token']) ?></div></div>
-    <button class="icon-btn" type="button" data-copy="<?= e($added['token']) ?>" title="Copy">⧉</button></div>
+  <div class="result-inner"><div class="result-link"><div class="url sm"><?= e($added['token']) ?></div></div>
+    <button class="icon-btn" type="button" data-copy="<?= e($added['token']) ?>" title="Copy" aria-label="Copy DNS verification value">⧉</button></div>
 </div>
 <?php endif; ?>
 
@@ -59,30 +59,30 @@ render_header('Custom domains');
   <form method="post" action="domains" class="input-row">
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="add">
-    <input type="text" name="host" placeholder="go.acme.com" required>
+    <input type="text" name="host" placeholder="go.acme.com" required aria-label="Domain, e.g. go.acme.com">
     <button class="btn btn-solid" type="submit">Add domain</button>
   </form>
   <p class="hint">Point the domain's A/CNAME record at this server (<?= e($ip_hint) ?>); TLS is issued automatically on first request.</p>
 
   <?php if ($domains): ?>
-  <table class="links-table" style="margin-top:18px">
+  <table class="links-table gap-top">
     <thead><tr><th>Domain</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($domains as $d): ?>
       <tr>
         <td class="short"><?= e($d['host']) ?></td>
-        <td><?= $d['verified'] ? '<span style="color:var(--accent-2)">verified</span>' : '<span style="color:var(--accent-3)">pending</span>' ?></td>
+        <td><?= $d['verified'] ? '<span class="status-ok">verified</span>' : '<span class="status-pending">pending</span>' ?></td>
         <td>
           <div class="row-actions">
             <?php if (!$d['verified']): ?>
             <form method="post" action="domains" style="display:inline">
               <?= csrf_field() ?><input type="hidden" name="action" value="verify"><input type="hidden" name="id" value="<?= e($d['id']) ?>">
-              <button class="btn btn-ghost" type="submit" style="padding:6px 12px">Verify</button>
+              <button class="btn btn-ghost btn-sm" type="submit">Verify</button>
             </form>
             <?php endif; ?>
             <form method="post" action="domains" onsubmit="return confirm('Remove this domain?');" style="display:inline">
               <?= csrf_field() ?><input type="hidden" name="action" value="remove"><input type="hidden" name="id" value="<?= e($d['id']) ?>">
-              <button class="icon-btn danger" type="submit" title="Remove">✕</button>
+              <button class="icon-btn danger" type="submit" title="Remove" aria-label="Remove domain <?= e($d['host']) ?>">✕</button>
             </form>
           </div>
         </td>

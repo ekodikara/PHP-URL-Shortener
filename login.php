@@ -56,7 +56,7 @@ render_header('Log in');
     <h1>Welcome back</h1>
     <p class="sub">Log in to manage your links.</p>
 
-    <?php if ($error): ?><div class="form-error"><?= e($error) ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="form-error" role="alert"><?= e($error) ?></div><?php endif; ?>
 
     <form method="post" action="login">
       <?= csrf_field() ?>
@@ -73,15 +73,13 @@ render_header('Log in');
       <button class="btn btn-solid btn-block" type="submit">Log in</button>
     </form>
 
-    <?php if (sso_enabled()): ?>
-      <div style="display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--ink-faint);font-size:0.85rem">
-        <span style="flex:1;height:1px;background:var(--stroke)"></span>or<span style="flex:1;height:1px;background:var(--stroke)"></span>
-      </div>
+    <?php if (sso_enabled()): $both_sso = oidc_enabled() && saml_enabled(); ?>
+      <div class="auth-divider">or</div>
       <?php if (oidc_enabled()): ?>
-        <a class="btn btn-ghost btn-block" href="sso?provider=oidc&action=login" style="margin-bottom:8px">Sign in with SSO (OIDC)</a>
+        <a class="btn btn-ghost btn-block" href="sso?provider=oidc&action=login">Log in with SSO<?= $both_sso ? ' (OIDC)' : '' ?></a>
       <?php endif; ?>
       <?php if (saml_enabled()): ?>
-        <a class="btn btn-ghost btn-block" href="sso?provider=saml&action=login">Sign in with SSO (SAML)</a>
+        <a class="btn btn-ghost btn-block" href="sso?provider=saml&action=login">Log in with SSO<?= $both_sso ? ' (SAML)' : '' ?></a>
       <?php endif; ?>
     <?php endif; ?>
 

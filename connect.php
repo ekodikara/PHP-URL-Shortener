@@ -41,21 +41,21 @@ $mcp_url = BASE_HREF . 'mcp';
 
 render_header('Connect AI');
 ?>
-<section class="hero" style="padding:36px 0 8px">
+<section class="hero hero-sub">
   <h1>Connect your <span class="grad">AI assistant</span></h1>
   <p>Use <?= e(APP_NAME) ?> from Claude and other MCP clients — shorten links, list them, check stats, and delete them by just asking.</p>
 </section>
 
 <?php if ($new_token): ?>
-<div class="card glass" style="border-color:rgba(182,255,60,0.5)">
+<div class="card glass card-new">
   <h2>Your new token</h2>
   <p class="sub">Copy it now — for security we only store a hash and can't show it again.</p>
   <div class="result-inner">
     <div class="result-link">
       <div class="lbl">API token</div>
-      <div class="url" style="font-size:1rem"><?= e($new_token) ?></div>
+      <div class="url sm"><?= e($new_token) ?></div>
     </div>
-    <button class="icon-btn" type="button" data-copy="<?= e($new_token) ?>" title="Copy">⧉</button>
+    <button class="icon-btn" type="button" data-copy="<?= e($new_token) ?>" title="Copy" aria-label="Copy API token">⧉</button>
   </div>
 </div>
 <?php endif; ?>
@@ -67,36 +67,36 @@ render_header('Connect AI');
     <?= csrf_field() ?>
     <input type="hidden" name="action" value="create">
     <div class="input-row">
-      <input type="text" name="label" placeholder="e.g. My laptop — Claude" maxlength="80">
+      <input type="text" name="label" placeholder="e.g. My laptop — Claude" maxlength="80" aria-label="Token label">
       <button class="btn btn-solid" type="submit">Generate token</button>
     </div>
     <div class="field" style="margin-top:12px">
-      <label style="display:inline-flex;align-items:center;gap:8px;margin-right:18px">
-        <input type="radio" name="scope" value="full" checked> Full access <span style="color:var(--ink-faint)">(create, list, stats, delete)</span>
+      <label class="radio-inline">
+        <input type="radio" name="scope" value="full" checked> Full access <span class="muted">(create, list, stats, delete)</span>
       </label>
-      <label style="display:inline-flex;align-items:center;gap:8px">
-        <input type="radio" name="scope" value="read"> Read-only <span style="color:var(--ink-faint)">(list + stats)</span>
+      <label class="radio-inline">
+        <input type="radio" name="scope" value="read"> Read-only <span class="muted">(list + stats)</span>
       </label>
     </div>
     <?php if (captcha_needed($pdo)): ?><?= recaptcha_block() ?><?php endif; ?>
   </form>
 
   <?php if ($tokens): ?>
-  <table class="links-table" style="margin-top:18px">
+  <table class="links-table gap-top">
     <thead><tr><th>Label</th><th>Scope</th><th>Created</th><th>Last used</th><th></th></tr></thead>
     <tbody>
     <?php foreach ($tokens as $t): ?>
       <tr>
         <td><?= e($t['label']) ?></td>
-        <td><span class="custom-badge"><?= $t['scope'] === 'read' ? 'read-only' : 'full' ?></span></td>
+        <td><span class="scope-badge"><?= $t['scope'] === 'read' ? 'read-only' : 'full' ?></span></td>
         <td><?= e(gmdate('Y-m-d', (int) $t['created'])) ?></td>
-        <td><?= $t['last_used'] ? e(gmdate('Y-m-d H:i', (int) $t['last_used'])) . ' UTC' : '<span style="color:var(--ink-faint)">never</span>' ?></td>
+        <td><?= $t['last_used'] ? e(gmdate('Y-m-d H:i', (int) $t['last_used'])) . ' UTC' : '<span class="muted">never</span>' ?></td>
         <td>
           <form method="post" action="connect" onsubmit="return confirm('Revoke this token? Clients using it will stop working.');" style="display:inline">
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="revoke">
             <input type="hidden" name="id" value="<?= e($t['id']) ?>">
-            <button class="icon-btn danger" type="submit" title="Revoke">✕</button>
+            <button class="icon-btn danger" type="submit" title="Revoke" aria-label="Revoke token <?= e($t['label']) ?>">✕</button>
           </form>
         </td>
       </tr>
@@ -109,12 +109,12 @@ render_header('Connect AI');
 <div class="card glass">
   <h2>2 · Add Snip to your AI client</h2>
   <p class="sub">MCP endpoint (Streamable HTTP):</p>
-  <div class="result-inner" style="margin-bottom:16px">
-    <div class="result-link"><div class="url" style="font-size:1.05rem"><?= e($mcp_url) ?></div></div>
-    <button class="icon-btn" type="button" data-copy="<?= e($mcp_url) ?>" title="Copy">⧉</button>
+  <div class="result-inner gap-btm">
+    <div class="result-link"><div class="url sm"><?= e($mcp_url) ?></div></div>
+    <button class="icon-btn" type="button" data-copy="<?= e($mcp_url) ?>" title="Copy" aria-label="Copy MCP endpoint URL">⧉</button>
   </div>
   <p class="sub">Claude Code (replace <code>TOKEN</code> with the one above):</p>
-  <pre style="background:rgba(0,0,0,0.35);border:1px solid var(--stroke);border-radius:12px;padding:14px;overflow-x:auto;color:var(--ink);font-size:0.85rem"><code>claude mcp add --transport http snip <?= e($mcp_url) ?> \
+  <pre class="code-block"><code>claude mcp add --transport http snip <?= e($mcp_url) ?> \
   --header "Authorization: Bearer TOKEN"</code></pre>
   <p class="hint">Then ask your assistant: “shorten https://example.com” or “list my Snip links”. Available tools: <code>shorten_url</code>, <code>list_links</code>, <code>get_stats</code>, <code>delete_link</code>.</p>
 </div>

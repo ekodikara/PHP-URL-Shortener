@@ -3,13 +3,13 @@
  * Snip — resolve a short code and redirect, counting the visit.
  */
 require __DIR__ . '/inc/bootstrap.php';
+require __DIR__ . '/inc/layout.php';   // themed error pages
 
 $code = isset($_GET['code']) ? $_GET['code'] : (isset($_GET['url']) ? $_GET['url'] : '');
 
 // Codes are random (CODE_LENGTH) or custom slugs (3–40 of [A-Za-z0-9_-]).
 if (!preg_match('/^[A-Za-z0-9_-]{1,40}$/', (string) $code)) {
-    http_response_code(404);
-    die('That is not a valid short link.');
+    render_error_page(404, 'Link not found', 'That\'s not a valid short link. Check the address for typos.');
 }
 
 // Pull the link plus the owner (for the account-wide monthly visit cap).
@@ -23,8 +23,7 @@ $stmt->execute(array($code));
 $link = $stmt->fetch();
 
 if (!$link) {
-    http_response_code(404);
-    die('Short link not found.');
+    render_error_page(404, 'Link not found', 'This short link doesn\'t exist or was removed. Check the address for typos.');
 }
 
 // Multi-tenant isolation: a branded-domain link resolves only on its own host,
@@ -33,8 +32,7 @@ $cur = current_domain($pdo);
 $cur_id = $cur ? (int) $cur['id'] : null;
 if ((int) $link['domain_id'] !== (int) $cur_id) {
     // (int)null === 0 on both sides keeps main-app links (NULL) on the main app.
-    http_response_code(404);
-    die('Short link not found.');
+    render_error_page(404, 'Link not found', 'This short link doesn\'t exist or was removed. Check the address for typos.');
 }
 
 // Record who is accessing this link (security review): ip, browser, platform…
@@ -42,14 +40,12 @@ log_access($pdo, 'redirect', $code, $link['owner_id']);
 
 // Disabled link or suspended owner → gone.
 if (!empty($link['link_blocked']) || !empty($link['owner_blocked'])) {
-    http_response_code(410);
-    die('This link has been disabled.');
+    render_error_page(410, 'Link disabled', 'This link was turned off by its owner or an administrator.');
 }
 
 // Defense in depth: never redirect to anything but http(s).
 if (!preg_match('|^https?://|i', $link['long_url'])) {
-    http_response_code(404);
-    die('Short link not found.');
+    render_error_page(404, 'Link not found', 'This short link doesn\'t exist or was removed. Check the address for typos.');
 }
 
 // Account-wide monthly visit cap (e.g. free trial = 50/month; paid = unlimited).
@@ -66,8 +62,7 @@ if ($cap !== null) {
         );
         $mv->execute(array($month, $month, $link['owner_id'], $month, $cap));
         if ($mv->rowCount() === 0) {
-            http_response_code(410);
-            die('This account has reached its monthly visit limit. The owner can upgrade for unlimited visits.');
+            render_error_page(410, 'Visit limit reached', 'This link\'s owner has used this month\'s visit allowance. Visits resume next month, or sooner if the owner upgrades.');
         }
     } catch (PDOException $e) {
         error_log('monthly visit count failed: ' . $e->getMessage());

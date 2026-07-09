@@ -47,9 +47,11 @@ $sec     = $pdo->query('SELECT ts, event, ip, detail FROM security_log ORDER BY 
 
 render_header('Admin');
 ?>
-<section style="margin:24px 0 8px">
-  <h1 style="font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;font-size:2rem;margin:0">Admin</h1>
-  <p style="color:var(--ink-dim);margin:6px 0 0">Moderation &amp; security review.</p>
+<section class="page-head">
+  <div>
+    <h1>Admin</h1>
+    <p class="sub">Moderation &amp; security review.</p>
+  </div>
 </section>
 
 <div class="card glass">
@@ -62,19 +64,19 @@ render_header('Admin');
       <tr>
         <td><?= e($u['email']) ?><?= $u['is_admin'] ? ' <span class="custom-badge">admin</span>' : '' ?></td>
         <td><?= e(plan_config($u['plan'])['name']) ?></td>
-        <td><?= $u['blocked'] ? '<span style="color:var(--danger)">blocked</span>' : '<span style="color:var(--accent-2)">active</span>' ?></td>
+        <td><?= $u['blocked'] ? '<span class="status-blocked">blocked</span>' : '<span class="status-ok">active</span>' ?></td>
         <td>
           <?php if (!$u['is_admin']): ?>
-          <form method="post" action="admin" style="display:flex;gap:6px;align-items:center">
+          <form method="post" action="admin" class="row-form">
             <?= csrf_field() ?>
             <input type="hidden" name="user_id" value="<?= e($u['id']) ?>">
             <?php if ($u['blocked']): ?>
               <input type="hidden" name="action" value="unblock_user">
-              <button class="icon-btn" type="submit" title="Unblock">▶</button>
+              <button class="icon-btn" type="submit" title="Unblock" aria-label="Unblock user">▶</button>
             <?php else: ?>
               <input type="hidden" name="action" value="block_user">
-              <input type="text" name="reason" placeholder="reason (optional)" style="width:160px;padding:6px 8px">
-              <button class="icon-btn danger" type="submit" title="Block">⛔</button>
+              <input type="text" name="reason" placeholder="Reason (optional)" class="input-compact" aria-label="Reason (optional)">
+              <button class="icon-btn danger" type="submit" title="Block" aria-label="Block user">⛔</button>
             <?php endif; ?>
           </form>
           <?php endif; ?>
@@ -93,7 +95,7 @@ render_header('Admin');
     <form method="post" action="admin" class="input-row">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="block_link">
-      <input type="text" name="code" placeholder="short code" required>
+      <input type="text" name="code" placeholder="Short code, e.g. my-launch" required aria-label="Short code">
       <button class="btn btn-ghost" type="submit">Disable link</button>
     </form>
   <?php else: ?>
@@ -110,7 +112,7 @@ render_header('Admin');
             <?= csrf_field() ?>
             <input type="hidden" name="action" value="unblock_link">
             <input type="hidden" name="code" value="<?= e($l['code']) ?>">
-            <button class="icon-btn" type="submit" title="Enable">▶</button>
+            <button class="icon-btn" type="submit" title="Enable" aria-label="Re-enable link <?= e($l['code']) ?>">▶</button>
           </form>
         </td>
       </tr>
@@ -135,7 +137,7 @@ render_header('Admin');
         <td class="long" title="<?= e($l['message']) ?>"><?= e($l['message']) ?></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$leads): ?><tr><td colspan="5" style="color:var(--ink-faint)">No leads yet.</td></tr><?php endif; ?>
+    <?php if (!$leads): ?><tr><td colspan="5" class="muted">No leads yet.</td></tr><?php endif; ?>
     </tbody>
   </table>
   </div>
@@ -157,7 +159,7 @@ render_header('Admin');
         <td><?= e($a['platform']) ?></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$access): ?><tr><td colspan="6" style="color:var(--ink-faint)">No access logged yet.</td></tr><?php endif; ?>
+    <?php if (!$access): ?><tr><td colspan="6" class="muted">No access logged yet.</td></tr><?php endif; ?>
     </tbody>
   </table>
   </div>
@@ -177,7 +179,7 @@ render_header('Admin');
         <td class="long"><?= e($s['detail']) ?></td>
       </tr>
     <?php endforeach; ?>
-    <?php if (!$sec): ?><tr><td colspan="4" style="color:var(--ink-faint)">No events yet.</td></tr><?php endif; ?>
+    <?php if (!$sec): ?><tr><td colspan="4" class="muted">No events yet.</td></tr><?php endif; ?>
     </tbody>
   </table>
   </div>

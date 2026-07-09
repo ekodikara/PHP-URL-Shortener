@@ -47,16 +47,18 @@ if ($session_id !== '' && stripe_ready()) {
 
 $plan_name = plan_config(($activated ? $session->metadata->plan : $user['plan']))['name'];
 
-render_header('Subscription confirmed');
+render_header($activated ? 'Subscription confirmed' : 'Finishing your upgrade');
 ?>
 <div class="auth-wrap">
-  <div class="card glass" style="text-align:center">
-    <div style="font-size:3rem;line-height:1;margin-bottom:8px">🎉</div>
-    <h1><?= $activated ? 'You\'re on ' . e($plan_name) . '!' : 'Thanks!' ?></h1>
+  <div class="card glass center">
+    <div class="success-glyph" aria-hidden="true"><?= $activated ? '🎉' : '⏳' ?></div>
+    <h1><?= $activated ? 'You\'re on ' . e($plan_name) . '!' : 'Almost there' ?></h1>
     <?php if ($activated): ?>
       <p class="sub">Your subscription is active. Time to make some links.</p>
     <?php else: ?>
-      <p class="sub">If your payment went through, your plan will update momentarily.</p>
+      <p class="sub">We're confirming your payment with Stripe — your plan usually updates
+        within a minute. Check your dashboard; if it hasn't changed after a few minutes,
+        contact us with your receipt email.</p>
     <?php endif; ?>
     <a class="btn btn-solid btn-block" href="dashboard">Go to dashboard →</a>
   </div>

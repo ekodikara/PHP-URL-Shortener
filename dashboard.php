@@ -34,12 +34,12 @@ $custom_limit = $plan['custom_slugs']; // null = unlimited, 0 = not allowed
 render_header('Dashboard');
 ?>
 
-<section style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:24px 0 18px">
+<section class="page-head">
   <div>
-    <h1 style="font-family:var(--font-display);font-weight:800;letter-spacing:-.03em;font-size:2.2rem;margin:0">Your links</h1>
-    <p style="color:var(--ink-dim);margin:6px 0 0"><?= count($links) ?> link<?= count($links) === 1 ? '' : 's' ?> · <?= number_format($total_clicks) ?> total clicks</p>
+    <h1>Your links</h1>
+    <p class="sub"><?= count($links) ?> link<?= count($links) === 1 ? '' : 's' ?> · <?= number_format($total_clicks) ?> total clicks</p>
   </div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">
+  <div class="page-head-actions">
     <?php if (is_admin($user)): ?>
       <a class="btn btn-ghost" href="admin">Admin</a>
     <?php endif; ?>
@@ -91,9 +91,9 @@ render_header('Dashboard');
 <div class="card glass">
   <h2>Create a short link</h2>
   <?php if (is_on_trial($user) && trial_active($user)): ?>
-    <p class="sub">You're on the <strong>free trial</strong> — <strong><?= trial_days_left($user) ?> day<?= trial_days_left($user) === 1 ? '' : 's' ?></strong> left. <a href="upgrade" style="color:var(--accent-2)">Upgrade →</a></p>
+    <p class="sub">You're on the <strong>free trial</strong> — <strong><?= trial_days_left($user) ?> day<?= trial_days_left($user) === 1 ? '' : 's' ?></strong> left. <a href="upgrade">Upgrade →</a></p>
   <?php elseif (trial_expired($user)): ?>
-    <p class="sub">Your free trial has <strong>ended</strong>. Existing links still redirect; <a href="upgrade" style="color:var(--accent-2)">upgrade to create new ones →</a></p>
+    <p class="sub">Your free trial has <strong>ended</strong>. Existing links still redirect; <a href="upgrade">upgrade to create new ones →</a></p>
   <?php else: ?>
     <p class="sub">On the <strong><?= e($plan['name']) ?></strong> plan.</p>
   <?php endif; ?>
@@ -132,7 +132,7 @@ render_header('Dashboard');
         <td class="short">
           <a href="<?= e($short) ?>" target="_blank" rel="noopener"><?= e(preg_replace('|^https?://|', '', $short)) ?></a>
           <?php if ($l['is_custom']): ?><span class="custom-badge">custom</span><?php endif; ?>
-          <?php if ($l['blocked']): ?><span class="custom-badge" style="color:var(--danger);border-color:rgba(255,93,108,0.4)">disabled</span><?php endif; ?>
+          <?php if ($l['blocked']): ?><span class="custom-badge badge-danger">disabled</span><?php endif; ?>
         </td>
         <td class="long" title="<?= e($l['long_url']) ?>"><?= e($l['long_url']) ?></td>
         <td class="clicks">
@@ -144,17 +144,17 @@ render_header('Dashboard');
         </td>
         <td>
           <div class="row-actions">
-            <a class="icon-btn" href="<?= e($short) ?>" target="_blank" rel="noopener" title="Open">↗</a>
-            <button class="icon-btn" type="button" data-copy="<?= e($short) ?>" title="Copy">⧉</button>
+            <a class="icon-btn" href="<?= e($short) ?>" target="_blank" rel="noopener" title="Open" aria-label="Open short link /<?= e($l['code']) ?>">↗</a>
+            <button class="icon-btn" type="button" data-copy="<?= e($short) ?>" title="Copy" aria-label="Copy short link /<?= e($l['code']) ?>">⧉</button>
             <form method="post" action="link-toggle" style="display:inline">
               <?= csrf_field() ?>
               <input type="hidden" name="code" value="<?= e($l['code']) ?>">
-              <button class="icon-btn" type="submit" title="<?= $l['blocked'] ? 'Enable' : 'Disable' ?>"><?= $l['blocked'] ? '▶' : '⏸' ?></button>
+              <button class="icon-btn" type="submit" title="<?= $l['blocked'] ? 'Enable' : 'Disable' ?>" aria-label="<?= $l['blocked'] ? 'Enable' : 'Disable' ?> link /<?= e($l['code']) ?>"><?= $l['blocked'] ? '▶' : '⏸' ?></button>
             </form>
             <form method="post" action="delete" onsubmit="return confirm('Delete this link?');" style="display:inline">
               <?= csrf_field() ?>
               <input type="hidden" name="code" value="<?= e($l['code']) ?>">
-              <button class="icon-btn danger" type="submit" title="Delete">✕</button>
+              <button class="icon-btn danger" type="submit" title="Delete" aria-label="Delete link /<?= e($l['code']) ?>">✕</button>
             </form>
           </div>
         </td>

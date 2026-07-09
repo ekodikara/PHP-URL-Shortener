@@ -1,6 +1,6 @@
 <?php
 /*
- * Snip — shared page shell (glassmorphism).
+ * Snip — shared page shell ("paper" theme: flat, organic, printed-matter).
  */
 
 function render_header($title = '')
@@ -22,13 +22,7 @@ function render_header($title = '')
 <?= turnstile_script() ?>
 </head>
 <body>
-<div class="aurora" aria-hidden="true">
-  <span class="blob blob-1"></span>
-  <span class="blob blob-2"></span>
-  <span class="blob blob-3"></span>
-</div>
-
-<header class="nav glass">
+<header class="nav">
   <a class="brand" href="/">
     <span class="brand-mark">✂</span><span class="brand-name"><?= e(APP_NAME) ?></span>
   </a>
@@ -141,11 +135,34 @@ function render_footer()
 </main>
 <footer class="foot">
   <span><?= e(APP_NAME) ?> — <?= e(APP_TAGLINE) ?></span>
-  <span class="foot-dim">Tie down long URLs.</span>
+  <span class="foot-dim">Measure. Cut. Share.</span>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="assets/app.js?v=<?= e(@filemtime(__DIR__ . '/../assets/app.js') ?: '1') ?>"></script>
 </body>
 </html>
 <?php
+}
+
+/**
+ * Themed error page for user-facing dead ends (bad short links, disabled
+ * links, visit caps). Replaces bare die() text so public visitors always
+ * land on a branded page. Sets the status code, renders, and exits.
+ */
+function render_error_page($status, $title, $message)
+{
+    http_response_code((int) $status);
+    render_header($title);
+    ?>
+<div class="auth-wrap">
+  <div class="card glass error-card">
+    <div class="error-code"><?= (int) $status ?></div>
+    <h1 style="font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:1.6rem;margin:0 0 6px"><?= e($title) ?></h1>
+    <p class="sub"><?= e($message) ?></p>
+    <a class="btn btn-solid" href="/">Go to <?= e(APP_NAME) ?></a>
+  </div>
+</div>
+    <?php
+    render_footer();
+    exit;
 }
