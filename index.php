@@ -14,16 +14,24 @@ render_header();
   <p><?= e(APP_NAME) ?> turns sprawling URLs into short, shareable links — with QR codes, click stats, and your own custom names.</p>
 </section>
 
-<div class="snip-demo glass" aria-hidden="true">
-  <div class="snip-row snip-long">
-    <span class="snip-tag">Long</span>
-    <span class="snip-url">example.com/2026/spring/product-launch/announcement?ref=newsletter&amp;utm_campaign=q2</span>
+<?php
+$bench_long  = 'example.com/2026/spring/product-launch/announcement?ref=newsletter&utm_campaign=q2';
+$bench_short = preg_replace('|^https?://|', '', BASE_HREF) . 'q2-launch';
+$bench_cut   = max(0, strlen($bench_long) - strlen($bench_short));
+?>
+<div class="bench glass" role="img" aria-label="Snip cuts a long URL down to the short link /q2-launch">
+  <div class="bench-rule" aria-hidden="true"><span>0</span><span>20</span><span>40</span><span>60</span><span>80</span></div>
+  <div class="ribbon" aria-hidden="true">
+    <span class="ribbon-len"><?= strlen($bench_long) ?> ch</span>
+    <span class="ribbon-url"><?= e($bench_long) ?></span>
   </div>
-  <div class="snip-perf"><span class="snip-scissors">✂</span></div>
-  <div class="snip-row snip-short">
-    <span class="snip-tag short">Snipped</span>
-    <span class="snip-result"><?= e(preg_replace('|^https?://|', '', BASE_HREF)) ?>q2-launch</span>
+  <div class="cutline" aria-hidden="true"><span class="blade">✂</span></div>
+  <div class="stub" aria-hidden="true">
+    <span class="stub-tab">Snip</span>
+    <span class="stub-code"><?= e($bench_short) ?></span>
+    <span class="stub-len"><?= strlen($bench_short) ?> ch</span>
   </div>
+  <?php if ($bench_cut > 0): ?><p class="bench-note" aria-hidden="true"><b><?= $bench_cut ?> characters</b> shorter.</p><?php endif; ?>
 </div>
 
 <div class="card glass shorten-card">
