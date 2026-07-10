@@ -65,6 +65,11 @@ define('TRIAL_DAYS', 30);
 // How long append-only log rows are kept before scripts/prune.php deletes them.
 define('LOG_RETENTION_DAYS', (int) (getenv('LOG_RETENTION_DAYS') ?: 90));
 
+// Session store: 'files' (default, single instance) or 'db' (MySQL-backed,
+// shared across instances — required for horizontal scaling). See inc/session.php.
+define('SESSION_DRIVER', getenv('SESSION_DRIVER') ?: 'files');
+define('SESSION_TABLE', 'sessions');
+
 // --- Stripe ----------------------------------------------------------------
 define('STRIPE_SECRET_KEY', getenv('STRIPE_SECRET_KEY') ?: '');
 define('STRIPE_PUBLISHABLE_KEY', getenv('STRIPE_PUBLISHABLE_KEY') ?: '');

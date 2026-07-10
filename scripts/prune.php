@@ -25,6 +25,8 @@ $deletes = array(
     'auth_tokens'   => array('DELETE FROM auth_tokens WHERE (used = 1 OR expires < ?) AND created < ?', array($now, $now - 7 * 86400)),
     // processed Stripe event ids beyond the retention window
     'stripe_events' => array('DELETE FROM stripe_events WHERE ts < ?',     array($cut)),
+    // expired DB-backed sessions (no-op unless SESSION_DRIVER=db is in use)
+    'sessions'      => array('DELETE FROM sessions WHERE expires < ?',     array($now)),
 );
 
 foreach ($deletes as $table => $q) {

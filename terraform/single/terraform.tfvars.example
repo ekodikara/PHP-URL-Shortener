@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars and edit. Only backup_bucket_name is required.
+region             = "us-east-1"
+name               = "snip"
+instance_type      = "t4g.small"      # t4g.micro to shave a few $/mo
+backup_bucket_name = "my-snip-backups" # must be globally unique
+repo_url           = "https://github.com/you/snip.git"
+
+# Optional:
+# ssh_cidr        = "203.0.113.4/32"   # leave unset to keep 22 closed (use SSM)
+# key_name        = "my-keypair"
+# domain          = "sho.rt"
+# route53_zone_id = "Z0123456789ABCDEFG"

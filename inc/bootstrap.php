@@ -95,6 +95,12 @@ if (session_status() !== PHP_SESSION_ACTIVE && !defined('SNIP_SKIP_SESSION')) {
         'secure'   => REQUEST_HTTPS,
     ));
     session_name('snipsess');
+    // Shared, DB-backed sessions for multi-instance deployments (opt-in). Must be
+    // registered before session_start(). Requires the `sessions` table (migration 003).
+    if (defined('SESSION_DRIVER') && SESSION_DRIVER === 'db') {
+        require_once __DIR__ . '/session.php';
+        session_set_save_handler(new DbSessionHandler($pdo, SESSION_TABLE), true);
+    }
     session_start();
 }
 

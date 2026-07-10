@@ -16,3 +16,11 @@ vendor/
 .DS_Store
 *.swp
 .lighthouseci/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+docs/_render*
+.phpunit.result.cache
