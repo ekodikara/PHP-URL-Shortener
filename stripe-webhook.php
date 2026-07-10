@@ -25,6 +25,17 @@ try {
     http_response_code(400); exit;          // bad signature — reject
 }
 
+// Idempotency: process each event id at most once (replay / out-of-order guard).
+try {
+    $seen = $pdo->prepare('INSERT INTO stripe_events (event_id, ts) VALUES (?, ?)');
+    $seen->execute(array($event->id, time()));
+} catch (\PDOException $e) {
+    // Duplicate key (or DB hiccup) → already processed; acknowledge and stop.
+    http_response_code(200);
+    echo 'duplicate';
+    exit;
+}
+
 switch ($event->type) {
     case 'checkout.session.completed':
         $s = $event->data->object;

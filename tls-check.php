@@ -6,6 +6,15 @@
  *   GET /tls-check?domain=go.acme.com  ->  200 (allow) | 404 (deny)
  */
 require __DIR__ . '/config.php';
+require __DIR__ . '/inc/security.php';
+
+// Throttle the on-demand-TLS ask endpoint so an attacker can't drive unbounded
+// cert-issuance attempts / DB lookups via arbitrary SNI.
+if (!rate_limit($pdo, 'tls:' . client_ip(), 60, 60)) {
+    http_response_code(429);
+    echo 'rate limited';
+    exit;
+}
 
 $host = isset($_GET['domain']) ? strtolower(trim($_GET['domain'])) : '';
 $host = preg_replace('/:.*$/', '', $host);

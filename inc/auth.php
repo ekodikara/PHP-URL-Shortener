@@ -99,6 +99,11 @@ function register_user(PDO $pdo, $email, $password)
     if (strlen($password) < 8) {
         return array(null, 'Password must be at least 8 characters.');
     }
+    // Cap length: bcrypt silently truncates at 72 bytes, and unbounded input is a
+    // hashing-DoS vector. Reject overly long passwords explicitly.
+    if (strlen($password) > 200) {
+        return array(null, 'Password must be at most 200 characters.');
+    }
 
     $stmt = $pdo->prepare('SELECT 1 FROM users WHERE email = ?');
     $stmt->execute(array($email));
@@ -120,8 +125,14 @@ function login_user(PDO $pdo, $email, $password)
     $stmt = $pdo->prepare('SELECT id, password_hash, blocked, blocked_reason FROM users WHERE email = ?');
     $stmt->execute(array(trim((string) $email)));
     $row = $stmt->fetch();
-    // Always run a hash verify to keep timing roughly constant.
-    $hash = $row ? $row['password_hash'] : '$2y$10$invalidinvalidinvalidinvalidinvalidinvalidinv';
+    // Always run a FULL hash verify (same algo+cost as real hashes) so the
+    // unknown-account path costs the same as the known-account path — no timing
+    // oracle. Generated once per request from PASSWORD_DEFAULT so cost tracks it.
+    static $dummy_hash = null;
+    if ($dummy_hash === null) {
+        $dummy_hash = password_hash('snip-timing-equalizer', PASSWORD_DEFAULT);
+    }
+    $hash = $row ? $row['password_hash'] : $dummy_hash;
     if (password_verify((string) $password, $hash) && $row) {
         if (!empty($row['blocked'])) {
             return array(null, 'This account has been suspended.'
@@ -135,8 +146,12 @@ function login_user(PDO $pdo, $email, $password)
 /** Persist the logged-in user id, regenerating the session id. */
 function establish_session($user_id)
 {
+    // Drop any pre-auth session data, then rotate the id (fixation defense).
+    $_SESSION = array();
     session_regenerate_id(true);
     $_SESSION['uid'] = (int) $user_id;
+    $_SESSION['login_at'] = time();
+    $_SESSION['last_seen'] = time();
 }
 
 function logout_user()

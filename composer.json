@@ -4,7 +4,8 @@
     "require": {
         "php": ">=8.1",
         "stripe/stripe-php": "^16.0",
-        "onelogin/php-saml": "^4.1"
+        "onelogin/php-saml": "^4.1",
+        "phpseclib/phpseclib": "^3.0"
     },
     "config": {
         "optimize-autoloader": true

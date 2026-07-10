@@ -18,9 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = isset($_POST['email']) ? $_POST['email'] : '';
     $password = isset($_POST['password']) ? $_POST['password'] : '';
 
-    // Throttle login attempts per IP and per account.
+    // Throttle per IP, and per (IP + account). Keying the account limit to the
+    // IP prevents a third party from locking a victim out globally by spamming
+    // their email, while still stopping brute force from any single source.
+    $acct_key = 'login_acct:' . client_ip() . ':' . strtolower(trim($email));
     if (!rate_limit($pdo, 'login:' . client_ip(), 10, 900)
-        || !rate_limit($pdo, 'login_acct:' . strtolower(trim($email)), 8, 900)) {
+        || !rate_limit($pdo, $acct_key, 8, 900)) {
         log_security_event($pdo, 'rate_limited', 'login:' . $email);
         http_response_code(429);
         $error = 'Too many login attempts. Please try again in a few minutes.';
@@ -36,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         list($uid, $error) = login_user($pdo, $email, $password);
         if ($uid) {
+            rl_clear($pdo, $acct_key);   // reset throttle on success
             log_security_event($pdo, 'login_ok', $email, $uid);
             establish_session($uid);
             redirect_to('dashboard');

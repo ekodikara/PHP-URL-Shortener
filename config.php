@@ -77,19 +77,21 @@ define('TURNSTILE_SECRET', getenv('TURNSTILE_SECRET') ?: '');
 // --- Adaptive Google reCAPTCHA --------------------------------------------
 // Shown ONLY to clients we flag as suspicious (spam behaviour or VPN/proxy),
 // on login, register, shortening, and API-key creation.
-// Defaults are Google's public TEST keys (always pass; show a "testing only"
-// widget). Override in .env with real keys for production.
-define('RECAPTCHA_SITE_KEY', getenv('RECAPTCHA_SITE_KEY') ?: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MUExBuc');
-define('RECAPTCHA_SECRET', getenv('RECAPTCHA_SECRET') ?: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe');
+// Empty = reCAPTCHA disabled (NOT a test-key fallback). When disabled, the
+// adaptive gate FAILS CLOSED for suspicious clients (captcha_gate -> 'blocked').
+// Set real reCAPTCHA v2 keys in .env to enable the challenge.
+define('RECAPTCHA_SITE_KEY', getenv('RECAPTCHA_SITE_KEY') ?: '');
+define('RECAPTCHA_SECRET', getenv('RECAPTCHA_SECRET') ?: '');
 // Optional IPQualityScore key enables VPN/proxy/Tor detection (no key = behaviour-only).
 define('IPQS_API_KEY', getenv('IPQS_API_KEY') ?: '');
 // An IP is "suspicious" after this many bad events in the window.
 define('SUSPICION_EVENTS', 5);
 define('SUSPICION_WINDOW', 3600);
 
-// Admins (comma-separated emails) get the /admin panel. Also settable via the
-// users.is_admin column.
-define('ADMIN_EMAILS', getenv('ADMIN_EMAILS') ?: 'alice@example.com');
+// Admins (comma-separated emails) get the /admin panel. Default empty: grant
+// admin only via the users.is_admin column (so a self-registered email can't
+// become admin just by matching a baked-in default).
+define('ADMIN_EMAILS', getenv('ADMIN_EMAILS') ?: '');
 
 // --- Enterprise SSO (env-gated; active only when configured) ---------------
 // OIDC: set issuer (for discovery) OR the explicit endpoints, plus client creds.
@@ -99,10 +101,15 @@ define('OIDC_ISSUER', getenv('OIDC_ISSUER') ?: '');            // e.g. https://a
 define('OIDC_AUTH_URL', getenv('OIDC_AUTH_URL') ?: '');        // optional explicit endpoints
 define('OIDC_TOKEN_URL', getenv('OIDC_TOKEN_URL') ?: '');
 define('OIDC_USERINFO_URL', getenv('OIDC_USERINFO_URL') ?: '');
+define('OIDC_JWKS_URL', getenv('OIDC_JWKS_URL') ?: '');         // explicit-mode JWKS (else from discovery)
 // SAML 2.0: identity-provider metadata.
 define('SAML_IDP_ENTITY_ID', getenv('SAML_IDP_ENTITY_ID') ?: '');
 define('SAML_IDP_SSO_URL', getenv('SAML_IDP_SSO_URL') ?: '');
 define('SAML_IDP_CERT', getenv('SAML_IDP_CERT') ?: '');        // IdP x509 cert (PEM body)
+// Comma-separated email domains allowed to auto-provision via SSO (empty = any).
+define('SSO_ALLOWED_DOMAINS', getenv('SSO_ALLOWED_DOMAINS') ?: '');
+// Plan assigned to auto-provisioned SSO users.
+define('SSO_DEFAULT_PLAN', getenv('SSO_DEFAULT_PLAN') ?: 'enterprise');
 
 // ---------------------------------------------------------------------------
 // Plans

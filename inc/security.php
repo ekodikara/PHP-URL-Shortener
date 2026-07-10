@@ -85,6 +85,14 @@ function rate_limit(PDO $pdo, $key, $max, $window)
     }
 }
 
+/** Reset a rate-limit counter (e.g. after a successful login). */
+function rl_clear(PDO $pdo, $key)
+{
+    try {
+        $pdo->prepare('DELETE FROM rate_limits WHERE rl_key = ?')->execute(array($key));
+    } catch (Exception $e) { /* best effort */ }
+}
+
 // --- Bot defenses ------------------------------------------------------------
 
 function turnstile_enabled()

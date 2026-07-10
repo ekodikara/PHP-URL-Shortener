@@ -53,20 +53,22 @@ if (!preg_match('|^https?://|i', $link['long_url'])) {
 }
 
 // Account-wide monthly visit cap (e.g. free trial = 50/month; paid = unlimited).
+// Done as a single atomic conditional UPDATE so concurrent visits can't exceed
+// the cap (the increment only succeeds while under the limit / in a new month).
 $cap = plan_config($link['plan'])['monthly_visit_cap'];
 if ($cap !== null) {
     $month = date('Y-m');
-    $used = ($link['visit_month'] === $month) ? (int) $link['month_visits'] : 0;
-    if ($used >= $cap) {
-        http_response_code(410);
-        die('This account has reached its monthly visit limit. The owner can upgrade for unlimited visits.');
-    }
-    // Increment the owner's monthly counter, resetting it when the month rolls over.
     try {
         $mv = $pdo->prepare(
-            'UPDATE users SET month_visits = IF(visit_month = ?, month_visits + 1, 1), visit_month = ? WHERE id = ?'
+            'UPDATE users
+                SET month_visits = IF(visit_month = ?, month_visits + 1, 1), visit_month = ?
+              WHERE id = ? AND (visit_month <> ? OR month_visits < ?)'
         );
-        $mv->execute(array($month, $month, $link['owner_id']));
+        $mv->execute(array($month, $month, $link['owner_id'], $month, $cap));
+        if ($mv->rowCount() === 0) {
+            http_response_code(410);
+            die('This account has reached its monthly visit limit. The owner can upgrade for unlimited visits.');
+        }
     } catch (PDOException $e) {
         error_log('monthly visit count failed: ' . $e->getMessage());
     }

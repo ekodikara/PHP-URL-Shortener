@@ -90,6 +90,12 @@ if ($id === null && strncmp($method, 'notifications/', 14) === 0) {
 
 /* ----------------------------- auth -------------------------------------- */
 
+// Pre-auth per-IP throttle: stops token brute-forcing / unauthenticated DoS
+// before we ever touch the token lookup.
+if (!rate_limit($pdo, 'mcp_ip:' . client_ip(), 60, 60)) {
+    rpc_error($id, -32003, 'Rate limit exceeded.', 429);
+}
+
 $user = user_for_token($pdo, bearer_token());
 if (!$user) {
     log_security_event($pdo, 'mcp_invalid_token', $method);
@@ -104,8 +110,9 @@ if (!plan_is_paid($user)) {
     rpc_error($id, -32002, 'MCP access requires an active Pro or Premium plan.', 403);
 }
 
-// Rate limit per token (protects against runaway/abusive clients).
-if (!rate_limit($pdo, 'mcp:' . $user['token_id'], 120, 60)) {
+// Rate limit per token AND per user (so minting many tokens can't multiply the cap).
+if (!rate_limit($pdo, 'mcp:' . $user['token_id'], 120, 60)
+    || !rate_limit($pdo, 'mcp_user:' . $user['id'], 300, 60)) {
     log_security_event($pdo, 'mcp_rate_limited', '', $user['id']);
     rpc_error($id, -32003, 'Rate limit exceeded: max 120 requests per minute.', 429);
 }

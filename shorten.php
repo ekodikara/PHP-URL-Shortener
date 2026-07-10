@@ -15,6 +15,15 @@ if (!$user) {
     }
     redirect_to('login');
 }
+// Suspended accounts cannot create links.
+if (!empty($user['blocked'])) {
+    log_security_event($pdo, 'blocked_action', 'shorten', $user['id']);
+    if (wants_json()) {
+        json_response(array('error' => 'Your account has been suspended.'), 403);
+    }
+    logout_user();
+    redirect_to('login');
+}
 
 csrf_check();
 

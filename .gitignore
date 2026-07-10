@@ -15,3 +15,6 @@ composer.lock
 # OS / editor
 .DS_Store
 *.swp
+
+# Claude Code worktrees (session-local checkouts)
+.claude/worktrees/

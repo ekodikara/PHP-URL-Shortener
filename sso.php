@@ -42,27 +42,33 @@ if ($provider === 'saml') {
         exit;
     }
     if ($action === 'login') {
-        $auth->login(rtrim(BASE_HREF, '/') . '/dashboard');   // redirects to IdP
-        exit;
+        // stay=true returns the redirect URL so we can persist the AuthnRequest
+        // ID and bind the eventual response to it (anti-replay / InResponseTo).
+        $url = $auth->login(rtrim(BASE_HREF, '/') . '/dashboard', array(), false, false, true);
+        $_SESSION['saml_req_id'] = $auth->getLastRequestID();
+        redirect_to($url);
     }
     if ($action === 'acs') {
-        $auth->processResponse();
+        $req_id = isset($_SESSION['saml_req_id']) ? $_SESSION['saml_req_id'] : null;
+        unset($_SESSION['saml_req_id']);
+        $auth->processResponse($req_id);
         if (!empty($auth->getErrors()) || !$auth->isAuthenticated()) {
             set_flash('error', 'SAML authentication failed.');
             redirect_to('login');
         }
         $attrs = $auth->getAttributes();
-        $email = $auth->getNameId();
+        $subject = $auth->getNameId();                 // stable IdP subject
+        $email = $subject;
         if (!filter_var($email, FILTER_VALIDATE_EMAIL) && !empty($attrs['email'][0])) {
             $email = $attrs['email'][0];
         }
-        $uid = sso_provision($pdo, $email);
+        list($uid, $err) = sso_provision($pdo, $email, 'saml', $subject);
         if ($uid) {
             log_security_event($pdo, 'sso_login', 'saml', $uid);
             establish_session($uid);
             redirect_to('dashboard');
         }
-        set_flash('error', 'This account is suspended.');
+        set_flash('error', $err ?: 'SSO sign-in failed.');
         redirect_to('login');
     }
 }
