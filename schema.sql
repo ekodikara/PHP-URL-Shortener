@@ -118,6 +118,29 @@ CREATE TABLE IF NOT EXISTS `access_log` (
   KEY `code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Cached Google Safe Browsing verdicts for destination URLs.
+CREATE TABLE IF NOT EXISTS `url_reputation` (
+  `url_hash` CHAR(64) NOT NULL,                 -- sha256 hex of the destination URL
+  `threat`   VARCHAR(40) NOT NULL DEFAULT '',   -- '' = clean, else e.g. SOCIAL_ENGINEERING
+  `checked`  INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`url_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Abuse reports filed against short links via the public /report form.
+CREATE TABLE IF NOT EXISTS `link_reports` (
+  `id`     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `ts`     INT UNSIGNED NOT NULL,
+  `code`   VARCHAR(40) NOT NULL,
+  `reason` VARCHAR(20) NOT NULL DEFAULT 'other',  -- phishing|malware|spam|other
+  `detail` TEXT,
+  `email`  VARCHAR(190) NOT NULL DEFAULT '',
+  `ip`     VARCHAR(45) NOT NULL DEFAULT '',
+  `status` ENUM('open','resolved','dismissed') NOT NULL DEFAULT 'open',
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`),
+  KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `urls` (
   `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id`   INT UNSIGNED NOT NULL,

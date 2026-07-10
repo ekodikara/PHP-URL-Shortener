@@ -267,6 +267,27 @@ so paid users can drive it from AI assistants.
 - **Access logging** — `log_access()` writes every redirect to `access_log`
   (ts, code, ip, browser, platform, referer, UA) via `parse_user_agent()`.
 
+## Abuse protection (Safe Browsing, reports, interstitial, terms)
+
+- **Google Safe Browsing v4** — `url_threat($pdo, $url)` in `inc/security.php`
+  (needs `SAFE_BROWSING_API_KEY` in `.env`; empty = checks disabled, fail-open).
+  Enforced in `create_short_url()` (creation rejected + `malicious_url_blocked`
+  logged) and in `redirect.php` (link auto-disabled + `auto_block_malicious`,
+  410). Verdicts cached in the `url_reputation` table for `URL_SCAN_TTL` (12h);
+  lookup failures are NOT cached.
+- **Public abuse reports** — `report.php` (clean `/report`, linked from the
+  footer and the interstitial): honeypot + rate-limited (5/hr/IP), accepts a
+  code or full short URL, writes to `link_reports`. `AUTO_BLOCK_REPORTS` (3)
+  open reports on one code auto-disables the link. Admin panel has an "Abuse
+  reports" section: resolve (= confirm abuse, disables the link) or dismiss.
+  Unknown codes get a success response but are not stored (no existence leak).
+- **Interstitial** — `redirect.php` shows a "You're leaving Snip" notice page
+  (destination host + full URL + report link) for links owned by TRIAL accounts;
+  paid plans 301 directly. Flagged destinations never redirect at all.
+- **Terms/AUP** — `terms.php` (clean `/terms`). `ABUSE_EMAIL` (env; defaults to
+  `abuse@<host>`) is shown on `/report` and `/terms`.
+- `terms`, `report`, `abuse` are in `RESERVED_SLUGS`.
+
 ## Enterprise plan (custom domains, SSO, contact sales)
 
 - **Plan**: `enterprise` (config) — unlimited everything, `custom_slugs => null`

@@ -141,6 +141,7 @@ function render_footer()
 </main>
 <footer class="foot">
   <span><?= e(APP_NAME) ?> — <?= e(APP_TAGLINE) ?></span>
+  <span class="foot-links"><a href="terms">Terms</a> · <a href="report">Report abuse</a></span>
   <span class="foot-dim">Tie down long URLs.</span>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>

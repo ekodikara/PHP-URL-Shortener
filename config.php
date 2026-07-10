@@ -93,6 +93,17 @@ define('SUSPICION_WINDOW', 3600);
 // become admin just by matching a baked-in default).
 define('ADMIN_EMAILS', getenv('ADMIN_EMAILS') ?: '');
 
+// --- Abuse protection -------------------------------------------------------
+// Google Safe Browsing v4 key: destination URLs are checked at creation and
+// (cached) at redirect time. Empty = checks disabled.
+define('SAFE_BROWSING_API_KEY', getenv('SAFE_BROWSING_API_KEY') ?: '');
+// How long a Safe Browsing verdict is cached (seconds).
+define('URL_SCAN_TTL', 43200);
+// Where abuse reports should be mailed (shown on /report and /terms).
+define('ABUSE_EMAIL', getenv('ABUSE_EMAIL') ?: 'abuse@' . parse_url(BASE_HREF, PHP_URL_HOST));
+// Open reports on one link before it is automatically disabled pending review.
+define('AUTO_BLOCK_REPORTS', 3);
+
 // --- Enterprise SSO (env-gated; active only when configured) ---------------
 // OIDC: set issuer (for discovery) OR the explicit endpoints, plus client creds.
 define('OIDC_CLIENT_ID', getenv('OIDC_CLIENT_ID') ?: '');
@@ -177,4 +188,5 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
     'enterprise', 'domains', 'sso', 'tls-check',
+    'terms', 'report', 'abuse',
 );

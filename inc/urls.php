@@ -68,6 +68,15 @@ function create_short_url(PDO $pdo, array $user, $long_url, $slug = '', $domain_
         return array(null, 'That URL is too long.');
     }
 
+    // Refuse destinations Google Safe Browsing knows to be malicious.
+    $threat = url_threat($pdo, $long_url);
+    if ($threat !== '') {
+        log_security_event($pdo, 'malicious_url_blocked',
+            $threat . ' ' . mb_substr($long_url, 0, 200), $user['id']);
+        return array(null, 'That destination is flagged as unsafe ('
+            . strtolower(str_replace('_', ' ', $threat)) . ') and can\'t be shortened.');
+    }
+
     // Link quota — monthly for the trial, lifetime total for paid plans.
     if ($plan['url_limit'] !== null && plan_usage($pdo, $user) >= $plan['url_limit']) {
         $msg = $plan['limit_period'] === 'total'
