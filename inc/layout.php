@@ -124,10 +124,10 @@ function render_plans($current = null)
           <?= csrf_field() ?>
           <input type="hidden" name="plan" value="<?= e($key) ?>">
           <input type="hidden" name="interval" value="month" class="js-interval">
-          <button class="btn <?= $featured ? 'btn-solid' : 'btn-ghost' ?> btn-block" type="submit">Choose <?= e($p['name']) ?></button>
+          <button class="btn btn-solid btn-block" type="submit">Choose <?= e($p['name']) ?></button>
         </form>
       <?php else: ?>
-        <a class="btn <?= $featured ? 'btn-solid' : 'btn-ghost' ?> btn-block" href="register">Get started</a>
+        <a class="btn btn-solid btn-block" href="register">Get started</a>
       <?php endif; ?>
     </div>
     <?php endforeach;
