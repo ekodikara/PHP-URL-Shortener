@@ -98,6 +98,36 @@ Status legend: `[ ]` todo · `[~]` partial (env-limited) · `[x]` done
 - [x] **T4.7 (bonus) Dead legacy artifacts** — DONE: removed `README`,
   `index.html`, `shortenedurls.sql`.
 
+## Round 2 — second code sweep (2026-07-11)
+
+- [x] **R2.1 🔴 CRITICAL: `cache/mail.log` served over HTTP → account takeover**
+  The dev mailer writes raw password-reset / email-verification tokens to
+  `cache/mail.log`, and `.htaccess` served any real file as-is (only `/inc/` and
+  `*.sql` were blocked). `GET /cache/mail.log` returned 200 with live tokens.
+  FIXED: `.htaccess` now blocks `/cache/` (and `/tests|/migrations|/scripts|
+  /vendor|/.git*`) + denies sensitive extensions. Verified 403. (Introduced by
+  the T2.7 mailer; caught on review.)
+- [x] **R2.2 🟠 Sensitive dev/ops files web-exposed** — `/composer.json`,
+  `/composer.lock`, `/backup.sh`, `/Dockerfile`, `/docker-compose.yml` all
+  returned 200 (the Dockerfile even reveals the IIS-spoof / mod_security setup).
+  FIXED: `.htaccess` denies `.sh/.json/.lock/.ya?ml/.xml/.ini/.log/.env/…`,
+  dotfiles, and `Dockerfile/Caddyfile`; `.dockerignore` now also keeps them out
+  of the image. Verified 403.
+- [x] **R2.3 🟡 Apache `Options All`** enabled SSI/CGI unnecessarily — tightened
+  to `-Indexes -Includes -ExecCGI +FollowSymLinks`.
+- [ ] **R2.4 (known, not new) Open-redirect → phishing** — a shortener 302s to
+  any http(s) URL; no link-safety check. Browser-side (no server SSRF), but a
+  public launch wants Safe-Browsing/abuse scanning. Tracked under privacy/AUP.
+
+**Reviewed & confirmed already-solid (no change needed):** OIDC id_token
+validation (RS256 sig via JWKS + iss/aud/nonce/exp + email_verified, no account
+takeover); SAML (signed assertions+messages, InResponseTo); MCP (bearer auth,
+per-IP+per-token+per-user rate limits, read/full scope enforcement); CSRF on all
+POST; PDO prepared statements throughout; session hardening (regenerate, idle/
+absolute timeout, HttpOnly/SameSite/Secure); exception boundary; CSP + security
+headers; reset/verify tokens (32-byte random, SHA-256 at rest, single-use,
+expiring, anti-enumeration).
+
 ## Not audited (spend limit) — follow-up pass
 - Multi-tenancy / SSO: OIDC/SAML signature + replay validation, domain-verify
   robustness, host-header injection.
