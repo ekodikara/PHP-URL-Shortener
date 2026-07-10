@@ -26,6 +26,8 @@ render_header('Terms of Service');
     <li>Malware, spyware, or any software installed without informed consent</li>
     <li>Unsolicited bulk messaging (spam), whether by email, SMS, or other channels</li>
     <li>Fraud, scams, or deceptive commercial practices</li>
+    <li>Sexually explicit or pornographic material</li>
+    <li>Content that is harmful or inappropriate to minors</li>
     <li>Content that is illegal in Australia or in the jurisdiction it targets</li>
     <li>Circumventing blocks or filters applied to another URL or domain</li>
   </ul>
