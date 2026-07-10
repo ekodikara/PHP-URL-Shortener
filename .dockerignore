@@ -1,9 +1,26 @@
 .git
 .gitignore
+.github
+.githooks
+.claude
 cache/
 *.md
 README
 .env
 .env.*
+!.env.example
 vendor/
 CREDENTIALS.local.md
+
+# Dev / ops files that must NOT ship in the web image
+Dockerfile
+docker-compose.yml
+docker-compose.prod.yml
+Caddyfile
+backup.sh
+restore.sh
+phpunit.xml
+tests/
+lighthouserc.json
+.lighthouseci/
+PRE-GO-LIVE.md

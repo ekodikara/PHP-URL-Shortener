@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($uid) {
             log_security_event($pdo, 'register', $email, $uid);
             establish_session($uid);
-            set_flash('success', 'Welcome to ' . APP_NAME . '! Your ' . TRIAL_DAYS . '-day free trial has started.');
+            send_verification_email($pdo, $uid, $email);
+            set_flash('success', 'Welcome to ' . APP_NAME . '! Your ' . TRIAL_DAYS . '-day free trial has started. Check your email to verify your address.');
             redirect_to('dashboard');
         }
     }
@@ -48,9 +49,9 @@ render_header('Create account');
 <div class="auth-wrap">
   <div class="card glass">
     <h1>Create your account</h1>
-    <p class="sub"><?= e(TRIAL_DAYS) ?>-day free trial — 20 links total, no card required.</p>
+    <p class="sub"><?= e(TRIAL_DAYS) ?>-day free trial — <?= e($GLOBALS['PLANS']['free']['url_limit']) ?> links total, no card required.</p>
 
-    <?php if ($error): ?><div class="form-error"><?= e($error) ?></div><?php endif; ?>
+    <?php if ($error): ?><div class="form-error" role="alert"><?= e($error) ?></div><?php endif; ?>
 
     <form method="post" action="register">
       <?= csrf_field() ?>
@@ -61,8 +62,8 @@ render_header('Create account');
       </div>
       <div class="field">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" minlength="8" required>
-        <p class="hint">At least 8 characters.</p>
+        <input type="password" id="password" name="password" minlength="8" required aria-describedby="password-hint">
+        <p class="hint" id="password-hint">At least 8 characters.</p>
       </div>
       <?php if (captcha_needed($pdo)): ?><?= recaptcha_block() ?><?php endif; ?>
       <button class="btn btn-solid btn-block" type="submit">Create account</button>

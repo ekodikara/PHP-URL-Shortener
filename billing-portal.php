@@ -10,10 +10,10 @@ require __DIR__ . '/inc/stripe.php';
 require_login();
 $user = current_user();
 
-// CSRF: require the per-session token so a cross-site request can't spin up a
-// billing-portal redirect for the victim.
-$token = isset($_POST['csrf']) ? $_POST['csrf'] : (isset($_GET['t']) ? $_GET['t'] : '');
-if (!hash_equals(csrf_token(), (string) $token)) {
+// POST-only + CSRF (token stays out of URLs/referers/logs) so a cross-site
+// request can't spin up a billing-portal redirect for the victim.
+if ($_SERVER['REQUEST_METHOD'] !== 'POST'
+    || !hash_equals(csrf_token(), (string) ($_POST['csrf'] ?? ''))) {
     redirect_to('dashboard');
 }
 

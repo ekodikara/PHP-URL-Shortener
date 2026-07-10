@@ -19,6 +19,15 @@ if (!rate_limit($pdo, 'tls:' . client_ip(), 60, 60)) {
 $host = isset($_GET['domain']) ? strtolower(trim($_GET['domain'])) : '';
 $host = preg_replace('/:.*$/', '', $host);
 
+// Throttle per requested HOST, not per caller IP: the caller is always Caddy
+// (one shared IP), so an IP key throttled every tenant together and was weak
+// abuse control. Keying on the SNI host caps cert-issuance attempts per name.
+if (!rate_limit($pdo, 'tls:' . ($host !== '' ? $host : client_ip()), 20, 60)) {
+    http_response_code(429);
+    echo 'rate limited';
+    exit;
+}
+
 if ($host !== '' && $host === preg_replace('/:.*$/', '', strtolower(SITE_HOST !== '' ? parse_url(SITE_HOST, PHP_URL_HOST) : ''))) {
     http_response_code(200); echo 'ok'; exit;   // the main app domain
 }

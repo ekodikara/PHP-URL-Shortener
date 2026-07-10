@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Too many submissions. Please try again later.';
     } elseif (!empty($_POST['hp_url'])) {
         log_security_event($pdo, 'bot_blocked', 'enterprise_lead:honeypot');
-        $error = 'Could not verify your request.';
+        $error = 'We couldn\'t verify your submission — please reload the page and try again.';
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL) || $name === '') {
         $error = 'Please provide your name and a valid work email.';
     } else {
@@ -35,16 +35,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 render_header('Enterprise');
 ?>
-<section class="hero" style="padding:40px 0 8px">
+<section class="hero hero-sub">
   <h1>Snip for <span class="grad">teams</span></h1>
   <p>Custom branded domains, single sign-on (SAML &amp; OIDC), unlimited everything,
      and the option to run Snip in your own environment.</p>
 </section>
 
-<div class="card glass" style="max-width:620px;margin:0 auto">
+<div class="card glass contact-card">
 <?php if ($sent): ?>
-  <div style="text-align:center;padding:20px 0">
-    <div style="font-size:3rem;line-height:1">📨</div>
+  <div class="form-success">
+    <div class="success-glyph" aria-hidden="true">📨</div>
     <h2>Thanks — we'll be in touch</h2>
     <p class="sub">Our team will reach out to <strong><?= e($email) ?></strong> shortly.</p>
     <a class="btn btn-ghost" href="/">Back home</a>
@@ -52,7 +52,7 @@ render_header('Enterprise');
 <?php else: ?>
   <h2>Talk to sales</h2>
   <p class="sub">Tell us a bit about your team and we'll tailor a plan.</p>
-  <?php if ($error): ?><div class="form-error"><?= e($error) ?></div><?php endif; ?>
+  <?php if ($error): ?><div class="form-error" role="alert"><?= e($error) ?></div><?php endif; ?>
   <form method="post" action="enterprise">
     <?= csrf_field() ?>
     <div class="hp-field" aria-hidden="true"><label>Leave blank<input type="text" name="hp_url" tabindex="-1" autocomplete="off"></label></div>
@@ -60,7 +60,7 @@ render_header('Enterprise');
     <div class="field"><label for="email">Work email</label><input type="email" id="email" name="email" value="<?= e($email) ?>" required></div>
     <div class="field"><label for="company">Company</label><input type="text" id="company" name="company" value="<?= e($company) ?>"></div>
     <div class="field"><label for="message">What do you need?</label>
-      <textarea id="message" name="message" rows="4" style="width:100%;padding:14px 16px;font-family:var(--font-body);color:var(--ink);background:rgba(0,0,0,0.25);border:1px solid var(--stroke);border-radius:var(--radius-s)"><?= e($message) ?></textarea>
+      <textarea id="message" name="message" rows="4"><?= e($message) ?></textarea>
     </div>
     <button class="btn btn-solid btn-block" type="submit">Send inquiry</button>
   </form>

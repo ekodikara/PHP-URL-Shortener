@@ -5,7 +5,7 @@ php_value display_errors 0
 FileETag none
 ServerSignature Off
 
-Options All -Indexes
+Options -Indexes -Includes -ExecCGI +FollowSymLinks
 
 # --- Spoof server fingerprint headers (look like Windows Azure / IIS) -------
 # The real "Server" header is rewritten to Microsoft-IIS/10.0 by mod_security
@@ -23,11 +23,20 @@ Options All -Indexes
   SetEnvIfNoCase Authorization "(.+)" HTTP_AUTHORIZATION=$1
 </IfModule>
 
-# --- Protect includes and raw config from direct web access -----------------
-<FilesMatch "\.(sql)$">
+# --- Protect includes, secrets, and ops/dev files from direct web access -----
+# Deny sensitive file types outright (defense in depth — most are also kept out
+# of the image by .dockerignore). Covers config, scripts, dumps, logs, lockfiles.
+<FilesMatch "\.(sql|sh|json|lock|ya?ml|xml|ini|log|example|dist|env)$">
   Require all denied
 </FilesMatch>
-RedirectMatch 404 ^/inc/
+# Deny dotfiles (.env, .htaccess, …) and extensionless ops files by name.
+<FilesMatch "^(\..*|Dockerfile|Caddyfile|Procfile)$">
+  Require all denied
+</FilesMatch>
+# Block whole non-public directories. cache/ is CRITICAL: it holds the dev mail
+# log (which contains raw password-reset / verification tokens). migrations/ and
+# scripts/ are needed by PHP on the filesystem but must never be web-served.
+RedirectMatch 404 ^/(inc|cache|tests|migrations|scripts|vendor|\.git|\.github|\.githooks)(/|$)
 
 <IfModule mod_rewrite.c>
 RewriteEngine On

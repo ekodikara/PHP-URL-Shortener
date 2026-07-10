@@ -1,0 +1,44 @@
+#!/bin/bash
+# Snip single-box bootstrap. Runs once on first boot (cloud-init).
+# Terraform fills the name/region/repo_url/backup_bucket placeholders below;
+# shell variables use bare $name (no braces) so they survive templating.
+set -euxo pipefail
+
+# --- Docker + tooling ---
+dnf install -y docker git awscli
+systemctl enable --now docker
+mkdir -p /usr/libexec/docker/cli-plugins
+curl -sL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64" \
+  -o /usr/libexec/docker/cli-plugins/docker-compose
+chmod +x /usr/libexec/docker/cli-plugins/docker-compose
+
+# --- App code ---
+mkdir -p /opt/${name}
+cd /opt/${name}
+if [ -n "${repo_url}" ]; then
+  git clone "${repo_url}" . || (git init && git remote add origin "${repo_url}" && git pull origin main)
+fi
+
+# --- Secrets: pull SecureString params from /${name}/ into .env ---
+: > .env
+for p in $(aws ssm get-parameters-by-path --with-decryption --region ${region} \
+            --path "/${name}/" --query "Parameters[].Name" --output text); do
+  key=$(basename "$p")
+  val=$(aws ssm get-parameter --with-decryption --region ${region} --name "$p" \
+          --query "Parameter.Value" --output text)
+  printf '%s=%s\n' "$key" "$val" >> .env
+done
+# behind Caddy on the same host, trust its forwarded client IP
+grep -q '^TRUSTED_PROXIES=' .env || echo 'TRUSTED_PROXIES=private' >> .env
+chmod 600 .env
+
+# --- Launch + migrate (only if the compose file is present) ---
+if [ -f docker-compose.prod.yml ]; then
+  docker compose -f docker-compose.prod.yml up -d --build
+  sleep 25
+  docker compose -f docker-compose.prod.yml exec -T web php scripts/migrate.php || true
+fi
+
+# --- Nightly DB backup → S3 ---
+( crontab -l 2>/dev/null; \
+  echo "0 3 * * * cd /opt/${name} && S3_BUCKET=${backup_bucket} ./backup.sh >> /var/log/snip-backup.log 2>&1" ) | crontab -

@@ -11,7 +11,10 @@ $payload = file_get_contents('php://input');
 $sig = isset($_SERVER['HTTP_STRIPE_SIGNATURE']) ? $_SERVER['HTTP_STRIPE_SIGNATURE'] : '';
 
 if (STRIPE_WEBHOOK_SECRET === '') {
-    // Not configured — acknowledge so Stripe doesn't retry, but do nothing.
+    // Misconfiguration: without the secret we can't verify or process events, so
+    // subscriptions would silently never activate. Make it LOUD in the logs
+    // (still 200 so Stripe doesn't hammer retries against a broken endpoint).
+    error_log('STRIPE MISCONFIG: stripe-webhook received an event but STRIPE_WEBHOOK_SECRET is unset — no subscription changes will be processed.');
     http_response_code(200);
     echo 'webhook secret not configured';
     exit;
@@ -26,40 +29,58 @@ try {
 }
 
 // Idempotency: process each event id at most once (replay / out-of-order guard).
+// The stripe_events row is the guard, but we only keep it if handling SUCCEEDS —
+// on failure we remove it and 500 so Stripe retries (otherwise a transient DB
+// error during handling would be permanently masked as "already processed" and
+// a paying customer would never get upgraded).
 try {
     $seen = $pdo->prepare('INSERT INTO stripe_events (event_id, ts) VALUES (?, ?)');
     $seen->execute(array($event->id, time()));
 } catch (\PDOException $e) {
-    // Duplicate key (or DB hiccup) → already processed; acknowledge and stop.
+    // Duplicate key → already processed successfully before; acknowledge and stop.
     http_response_code(200);
     echo 'duplicate';
     exit;
 }
 
-switch ($event->type) {
-    case 'checkout.session.completed':
-        $s = $event->data->object;
-        if (!empty($s->metadata->user_id) && $s->payment_status === 'paid') {
-            activate_subscription(
-                $pdo,
-                $s->metadata->user_id,
-                $s->metadata->plan,
-                $s->metadata->interval,
-                $s->customer,
-                $s->subscription
-            );
-        }
-        break;
+try {
+    switch ($event->type) {
+        case 'checkout.session.completed':
+            $s = $event->data->object;
+            // 'no_payment_required' covers 100%-off promo codes (allow_promotion_codes).
+            $paid = in_array($s->payment_status, array('paid', 'no_payment_required'), true);
+            if (!empty($s->metadata->user_id) && $paid) {
+                activate_subscription(
+                    $pdo,
+                    $s->metadata->user_id,
+                    $s->metadata->plan,
+                    $s->metadata->interval,
+                    $s->customer,
+                    $s->subscription
+                );
+            }
+            break;
 
-    case 'customer.subscription.deleted':
-        // Fires when the subscription actually ends (after cancel_at_period_end,
-        // or on failed payment). Downgrade to the locked free state.
-        $sub = $event->data->object;
-        downgrade_by_customer($pdo, $sub->customer);
-        break;
+        case 'customer.subscription.deleted':
+            // Fires when a subscription actually ends. Only downgrade if the
+            // ENDED subscription is the user's current one — a late-arriving
+            // delete for an old sub must not clobber a fresh re-subscription.
+            $sub = $event->data->object;
+            downgrade_by_customer($pdo, $sub->customer, $sub->id);
+            break;
 
-    // customer.subscription.updated (e.g. cancel_at_period_end = true) keeps the
-    // plan active until period end, so no action is needed there.
+        // customer.subscription.updated (e.g. cancel_at_period_end = true) keeps
+        // the plan active until period end, so no action is needed there.
+    }
+} catch (\Throwable $e) {
+    // Handling failed — undo the idempotency marker and 500 so Stripe retries.
+    try {
+        $pdo->prepare('DELETE FROM stripe_events WHERE event_id = ?')->execute(array($event->id));
+    } catch (\Throwable $e2) { /* best effort */ }
+    error_log('Stripe webhook handling failed for event ' . $event->id . ': ' . $e->getMessage());
+    http_response_code(500);
+    echo 'retry';
+    exit;
 }
 
 http_response_code(200);

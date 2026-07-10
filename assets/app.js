@@ -8,6 +8,9 @@
       t = document.createElement('div');
       t.id = 'toast';
       t.className = 'toast';
+      // announce toasts (copy confirmations, AJAX errors) to assistive tech
+      t.setAttribute('role', 'status');
+      t.setAttribute('aria-live', 'polite');
       document.body.appendChild(t);
     }
     t.textContent = msg;
@@ -36,9 +39,26 @@
       text: text,
       width: 88,
       height: 88,
-      colorDark: '#070b14',
+      colorDark: '#2a2118',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+
+  // Light/dark toggle. Effective theme = explicit choice, else OS preference.
+  // The choice is persisted and applied pre-paint by an inline <head> script.
+  var themeBtn = document.getElementById('theme-toggle');
+  if (themeBtn) {
+    themeBtn.addEventListener('click', function () {
+      var root = document.documentElement;
+      var explicit = root.getAttribute('data-theme');
+      var dark = explicit
+        ? explicit === 'dark'
+        : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      themeBtn.setAttribute('data-mode', next);
+      try { localStorage.setItem('snip-theme', next); } catch (e) {}
     });
   }
 
@@ -108,7 +128,21 @@
             return;
           }
           if (result) {
-            result.querySelector('.url').textContent = res.body.short_url.replace(/^https?:\/\//, '');
+            var shortDisplay = res.body.short_url.replace(/^https?:\/\//, '');
+            result.querySelector('.url').textContent = shortDisplay;
+            // honest measurement: how much paper the cut removed
+            var savedEl = result.querySelector('[data-saved]');
+            var longEl = form.querySelector('[name=longurl]');
+            if (savedEl && longEl) {
+              var longLen = longEl.value.replace(/^https?:\/\//, '').length;
+              var diff = longLen - shortDisplay.length;
+              if (diff > 0) {
+                savedEl.innerHTML = '<b>' + diff + ' characters</b> shorter.';
+                savedEl.hidden = false;
+              } else {
+                savedEl.hidden = true;
+              }
+            }
             var copyBtn = result.querySelector('[data-copy]');
             if (copyBtn) copyBtn.setAttribute('data-copy', res.body.short_url);
             var open = result.querySelector('.open-link');

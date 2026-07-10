@@ -21,6 +21,9 @@ try {
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            // Reuse pooled connections instead of a fresh TCP+auth handshake on
+            // every request (the redirect hot path opens one per hop).
+            PDO::ATTR_PERSISTENT         => true,
         )
     );
 } catch (PDOException $e) {
@@ -59,6 +62,14 @@ define('CODE_LENGTH', 6);
 // New accounts start on a time-limited trial (plan key 'free').
 define('TRIAL_DAYS', 30);
 
+// How long append-only log rows are kept before scripts/prune.php deletes them.
+define('LOG_RETENTION_DAYS', (int) (getenv('LOG_RETENTION_DAYS') ?: 90));
+
+// Session store: 'files' (default, single instance) or 'db' (MySQL-backed,
+// shared across instances — required for horizontal scaling). See inc/session.php.
+define('SESSION_DRIVER', getenv('SESSION_DRIVER') ?: 'files');
+define('SESSION_TABLE', 'sessions');
+
 // --- Stripe ----------------------------------------------------------------
 define('STRIPE_SECRET_KEY', getenv('STRIPE_SECRET_KEY') ?: '');
 define('STRIPE_PUBLISHABLE_KEY', getenv('STRIPE_PUBLISHABLE_KEY') ?: '');
@@ -67,6 +78,13 @@ define('STRIPE_API_VERSION', '2026-05-27.dahlia');
 
 // Yearly billing discount (paid annually). 0.12 = 12% off 12 months.
 define('YEARLY_DISCOUNT', 0.12);
+
+// --- Outbound mail (verification + password reset) -------------------------
+// MAIL_FROM empty = dev mode: emails are written to cache/mail.log instead of
+// being delivered (so links are retrievable without a mail server). In prod set
+// MAIL_FROM (and point PHP mail() at an SMTP relay / sendmail).
+define('MAIL_FROM', getenv('MAIL_FROM') ?: '');
+define('MAIL_REPLY_TO', getenv('MAIL_REPLY_TO') ?: '');
 
 // --- Bot protection (Cloudflare Turnstile, optional) -----------------------
 // If both keys are set (in .env), Turnstile is enforced on register/login on
@@ -187,6 +205,7 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'favicon', 'robots', 'api', 'admin', 'cache', 'me', 'account', 'pricing',
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
-    'enterprise', 'domains', 'sso', 'tls-check',
+    'enterprise', 'domains', 'sso', 'tls-check', 'health',
     'terms', 'report', 'abuse',
+    'forgot', 'reset', 'verify',
 );

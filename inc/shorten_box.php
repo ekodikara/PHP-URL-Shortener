@@ -31,7 +31,7 @@ if (trial_expired($user)):
     <label for="slug">Custom name <span style="color:var(--ink-faint)">(optional)</span></label>
     <div class="slug-row">
       <span class="prefix"><?= e(preg_replace('|^https?://|', '', BASE_HREF)) ?></span>
-      <input type="text" id="slug" name="slug" placeholder="my-link" pattern="[A-Za-z0-9_-]{3,40}">
+      <input type="text" id="slug" name="slug" placeholder="my-link" pattern="[A-Za-z0-9_\-]{3,40}">
     </div>
     <p class="hint">3–40 letters, numbers, hyphens or underscores.</p>
   </div>
@@ -45,12 +45,13 @@ if (trial_expired($user)):
   <div class="result-inner">
     <div class="qr" data-qr-target></div>
     <div class="result-link">
-      <div class="lbl">Your short link</div>
+      <div class="lbl">Snipped</div>
       <div class="url"></div>
+      <div class="saved" data-saved hidden></div>
     </div>
     <div class="row-actions">
-      <a class="icon-btn open-link" href="#" target="_blank" rel="noopener" title="Open">↗</a>
-      <button class="icon-btn" type="button" data-copy="" title="Copy">⧉</button>
+      <a class="icon-btn open-link" href="#" target="_blank" rel="noopener" title="Open" aria-label="Open short link">↗</a>
+      <button class="icon-btn" type="button" data-copy="" title="Copy" aria-label="Copy short link">⧉</button>
     </div>
   </div>
 </div>

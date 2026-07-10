@@ -1,6 +1,6 @@
 <?php
 /*
- * Snip — shared page shell (glassmorphism).
+ * Snip — shared page shell (flat neutral theme with light + dark modes).
  */
 
 function render_header($title = '')
@@ -15,24 +15,22 @@ function render_header($title = '')
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= e($full_title) ?></title>
+<script>/* set theme before paint (no flash of wrong mode) */(function(){try{var t=localStorage.getItem('snip-theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Archivo+Expanded:wght@600;700;800;900&family=Hanken+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css?v=<?= e(@filemtime(__DIR__ . '/../assets/style.css') ?: '1') ?>">
 <?= turnstile_script() ?>
 </head>
 <body>
-<div class="aurora" aria-hidden="true">
-  <span class="blob blob-1"></span>
-  <span class="blob blob-2"></span>
-  <span class="blob blob-3"></span>
-</div>
-
-<header class="nav glass">
+<header class="nav">
   <a class="brand" href="/">
     <span class="brand-mark">✂</span><span class="brand-name"><?= e(APP_NAME) ?></span>
   </a>
   <nav class="nav-links">
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch between light and dark mode" title="Light / dark">
+      <span class="moon" aria-hidden="true">☾</span><span class="sun" aria-hidden="true">☀</span>
+    </button>
     <a href="/#pricing">Pricing</a>
     <?php if ($u): ?>
       <a href="dashboard">Dashboard</a>
@@ -41,7 +39,7 @@ function render_header($title = '')
       <?php else: ?>
         <span class="plan-pill plan-<?= e($u['plan']) ?>"><?= e(plan_config($u['plan'])['name']) ?></span>
       <?php endif; ?>
-      <a class="btn btn-ghost" href="logout?t=<?= e(csrf_token()) ?>">Sign out</a>
+      <form class="nav-signout" method="post" action="logout"><?= csrf_field() ?><button class="btn btn-ghost" type="submit">Sign out</button></form>
     <?php else: ?>
       <a href="login">Log in</a>
       <a class="btn btn-solid" href="register">Get started</a>
@@ -114,7 +112,7 @@ function render_plans($current = null)
       <?php elseif ($is_current && $is_trial): ?>
         <button class="btn btn-ghost btn-block" disabled><?= trial_active($u) ? trial_days_left($u) . ' day' . (trial_days_left($u) === 1 ? '' : 's') . ' left' : 'Trial ended' ?></button>
       <?php elseif ($is_current): ?>
-        <a class="btn btn-ghost btn-block" href="billing-portal?t=<?= e(csrf_token()) ?>">Manage billing</a>
+        <form method="post" action="billing-portal"><?= csrf_field() ?><button class="btn btn-ghost btn-block" type="submit">Manage billing</button></form>
       <?php elseif ($is_trial): ?>
         <?php if ($u): ?>
           <button class="btn btn-ghost btn-block" disabled>New accounts only</button>
@@ -126,10 +124,10 @@ function render_plans($current = null)
           <?= csrf_field() ?>
           <input type="hidden" name="plan" value="<?= e($key) ?>">
           <input type="hidden" name="interval" value="month" class="js-interval">
-          <button class="btn <?= $featured ? 'btn-solid' : 'btn-ghost' ?> btn-block" type="submit">Choose <?= e($p['name']) ?></button>
+          <button class="btn btn-solid btn-block" type="submit">Choose <?= e($p['name']) ?></button>
         </form>
       <?php else: ?>
-        <a class="btn <?= $featured ? 'btn-solid' : 'btn-ghost' ?> btn-block" href="register">Get started</a>
+        <a class="btn btn-solid btn-block" href="register">Get started</a>
       <?php endif; ?>
     </div>
     <?php endforeach;
@@ -142,11 +140,34 @@ function render_footer()
 <footer class="foot">
   <span><?= e(APP_NAME) ?> — <?= e(APP_TAGLINE) ?></span>
   <span class="foot-links"><a href="terms">Terms</a> · <a href="report">Report abuse</a></span>
-  <span class="foot-dim">Tie down long URLs.</span>
+  <span class="foot-dim">Measure. Cut. Share.</span>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU" crossorigin="anonymous"></script>
 <script src="assets/app.js?v=<?= e(@filemtime(__DIR__ . '/../assets/app.js') ?: '1') ?>"></script>
 </body>
 </html>
 <?php
+}
+
+/**
+ * Themed error page for user-facing dead ends (bad short links, disabled
+ * links, visit caps). Replaces bare die() text so public visitors always
+ * land on a branded page. Sets the status code, renders, and exits.
+ */
+function render_error_page($status, $title, $message)
+{
+    http_response_code((int) $status);
+    render_header($title);
+    ?>
+<div class="auth-wrap">
+  <div class="card glass error-card">
+    <div class="error-code"><?= (int) $status ?></div>
+    <h1 style="font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:1.6rem;margin:0 0 6px"><?= e($title) ?></h1>
+    <p class="sub"><?= e($message) ?></p>
+    <a class="btn btn-solid" href="/">Go to <?= e(APP_NAME) ?></a>
+  </div>
+</div>
+    <?php
+    render_footer();
+    exit;
 }

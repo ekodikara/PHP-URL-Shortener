@@ -13,10 +13,17 @@ function current_host()
     return strtolower(preg_replace('/:.*$/', '', $h));
 }
 
-/** scheme://host/ for the CURRENT request (used to brand created short links). */
+/** scheme://host[:port]/ for the CURRENT request (used to brand created short
+ *  links). current_host() strips the port for domain matching, but the branded
+ *  URL must keep a non-standard port or dev/proxied links won't resolve. */
 function request_base()
 {
-    return (REQUEST_HTTPS ? 'https' : 'http') . '://' . current_host() . '/';
+    $port = '';
+    $h = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+    if (preg_match('/:(\d+)$/', $h, $m) && $m[1] !== (REQUEST_HTTPS ? '443' : '80')) {
+        $port = ':' . $m[1];
+    }
+    return (REQUEST_HTTPS ? 'https' : 'http') . '://' . current_host() . $port . '/';
 }
 
 /** The verified custom-domain row for the current Host, or null (= main app). */

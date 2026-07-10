@@ -4,13 +4,13 @@ CREDENTIALS.local.md
 *.local.txt
 .env
 .env.*
+!.env.example
 
 # Runtime
 cache/
 
 # Composer dependencies (installed in the Docker image)
 vendor/
-composer.lock
 
 # OS / editor
 .DS_Store
@@ -18,3 +18,12 @@ composer.lock
 
 # Claude Code worktrees (session-local checkouts)
 .claude/worktrees/
+.lighthouseci/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+docs/_render*
+.phpunit.result.cache

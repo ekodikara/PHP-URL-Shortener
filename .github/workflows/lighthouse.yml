@@ -1,0 +1,45 @@
+# Snip — Lighthouse test pipeline (CI).
+#
+# Auto:   runs on every push (every commit that reaches GitHub).
+# Manual: "Run workflow" button in the Actions tab (workflow_dispatch).
+#
+# Thresholds live in lighthouserc.json — the same config the local
+# scripts/lighthouse.sh runner and the post-commit hook use.
+name: Lighthouse
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start app (docker compose)
+        run: |
+          docker compose up -d --build
+          echo "Waiting for http://localhost:8088 …"
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://localhost:8088/ && break
+            sleep 2
+          done
+          curl -sf -o /dev/null http://localhost:8088/
+
+      - name: Run Lighthouse CI
+        run: |
+          npm install -g @lhci/cli@0.14.x
+          lhci autorun --config=lighthouserc.json
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-reports
+          path: .lighthouseci
+          if-no-files-found: ignore
+
+      - name: Stop app
+        if: always()
+        run: docker compose down -v

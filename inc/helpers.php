@@ -54,8 +54,14 @@ function csrf_check()
         if (wants_json()) {
             json_response(array('error' => 'Invalid session token. Please reload.'), 419);
         }
-        http_response_code(419);
-        die('Invalid session token. Please reload and try again.');
+        // A stale token usually means the session expired — send the user back
+        // to retry on a fresh form instead of a bare unthemed error page.
+        set_flash('error', 'Your session expired — please try again.');
+        $back = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '/';
+        if (strpos($back, BASE_HREF) !== 0) {
+            $back = '/';   // only bounce back to our own pages
+        }
+        redirect_to($back);
     }
 }
 

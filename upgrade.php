@@ -11,7 +11,7 @@ $user = current_user();
 
 render_header('Plans');
 ?>
-<section class="hero" style="padding-bottom:8px">
+<section class="hero hero-sub">
   <h1>Pick your <span class="grad">plan</span></h1>
   <p>You're currently on the <strong><?= e(plan_config($user['plan'])['name']) ?></strong> plan.</p>
 </section>
@@ -21,7 +21,7 @@ render_header('Plans');
   <div class="plans">
     <?php render_plans($user['plan']); ?>
   </div>
-  <p class="hint" style="text-align:center;margin-top:22px">
+  <p class="hint center">
     Secure payments by Stripe. Cancel anytime — you keep access until the period you paid for ends.
   </p>
 </section>

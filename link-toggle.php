@@ -18,6 +18,15 @@ $code = isset($_POST['code']) ? (string) $_POST['code'] : '';
 $stmt = $pdo->prepare('UPDATE urls SET blocked = 1 - blocked WHERE code = ? AND user_id = ?');
 $stmt->execute(array($code, $user['id']));
 
-set_flash($stmt->rowCount() ? 'success' : 'error',
-    $stmt->rowCount() ? 'Link updated.' : 'Link not found.');
+if ($stmt->rowCount()) {
+    // Tell the user which state the link landed in — a paused link 410s for visitors.
+    $st = $pdo->prepare('SELECT blocked FROM urls WHERE code = ? AND user_id = ?');
+    $st->execute(array($code, $user['id']));
+    $blocked = (int) $st->fetchColumn();
+    set_flash('success', $blocked
+        ? 'Link paused — visitors now see a disabled notice.'
+        : 'Link re-enabled — visitors are redirected again.');
+} else {
+    set_flash('error', 'Link not found.');
+}
 redirect_to('dashboard');
