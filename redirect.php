@@ -102,7 +102,6 @@ try {
 // silent redirect — visitors see where they're headed and can report abuse.
 // Paid plans redirect directly.
 if (!plan_is_paid(array('plan' => $link['plan']))) {
-    require __DIR__ . '/inc/layout.php';
     $dest = $link['long_url'];
     $dest_host = parse_url($dest, PHP_URL_HOST);
     render_header('Redirect notice');
