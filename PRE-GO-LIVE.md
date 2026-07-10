@@ -62,32 +62,41 @@ Status legend: `[ ]` todo · `[~]` partial (env-limited) · `[x]` done
 
 ## Tier 3 — medium (hardening, verified where noted)
 
-- [ ] **T3.1 ✅ Unbounded log growth + indefinite visitor-IP retention** (GDPR) —
-  add a prune script + retention window; composite index for the suspicion
-  query.
-- [ ] **T3.2 ✅ Unbounded container logs + no CPU/mem limits** — add `logging:`
-  caps and resource limits in `docker-compose.prod.yml`.
-- [ ] **T3.3 ✅ No CSP for scripts/styles** (only `frame-ancestors`) — add a
-  scoped Content-Security-Policy allowing the known CDNs.
-- [ ] **T3.4 ⚠️ `urls.domain_id` no FK/index; `stripe_customer_id` non-unique** —
-  fix in migration 001 (index + `ON DELETE SET NULL`; unique nullable customer).
-- [ ] **T3.5 ⚠️ Dashboard loads ALL links, one QR per row** — add pagination.
+- [x] **T3.1 ✅ Unbounded log growth + indefinite visitor-IP retention** — DONE:
+  `scripts/prune.php` (retention `LOG_RETENTION_DAYS`, default 90) prunes
+  access/security/stripe logs, dead rate_limits, stale ip_reputation, and
+  used/expired auth_tokens; `security_log(ip,ts)` composite index added
+  (migration 001); login rate-limit key now hashes the email so it can't be
+  overflowed. Verified prune runs clean.
+- [x] **T3.2 ✅ Unbounded container logs + no CPU/mem limits** — DONE:
+  `docker-compose.prod.yml` — json-file logging (10m×3) + `mem_limit`/`cpus`
+  on all three services (db 640m, web 256m, caddy 128m).
+- [x] **T3.3 ✅ No CSP for scripts/styles** — DONE: scoped Content-Security-Policy
+  in `inc/bootstrap.php` (self + Google Fonts + cdnjs + Turnstile + reCAPTCHA;
+  object/base/frame-ancestors locked). Verified live: zero console violations,
+  fonts + QR + theme intact.
+- [x] **T3.4 ⚠️ `urls.domain_id` FK/index; `stripe_customer_id` unique** — DONE in
+  migration 001 (see T1.5).
+- [x] **T3.5 ⚠️ Dashboard loads ALL links, one QR per row** — DONE: stats via SQL
+  aggregates; table paginated (25/page) with a pager. Verified stats correct.
 
 ## Tier 4 — low (verified)
 
-- [ ] **T4.1 ✅ CSRF token in GET query strings** (logout, billing-portal) —
-  convert to POST forms.
-- [ ] **T4.2 ✅ Rate limiter fails open on DB error** — log the failure (keep
-  fail-open so a DB blip can't lock out the whole site).
-- [ ] **T4.3 ✅ HSTS missing on custom-domain vhost** — add the header to the
+- [x] **T4.1 ✅ CSRF token in GET query strings** — DONE: `logout` + `billing-portal`
+  are POST-only + CSRF; nav "Sign out" and both "Manage billing" links are now
+  POST forms. Verified sign-out is a button.
+- [x] **T4.2 ✅ Rate limiter fails open on DB error** — ALREADY SATISFIED:
+  `rate_limit()` already `error_log`s and fails open by design (a DB blip must
+  not lock out the whole site). No change needed.
+- [x] **T4.3 ✅ HSTS missing on custom-domain vhost** — DONE: added HSTS to the
   on-demand `https://` block in `Caddyfile`.
-- [ ] **T4.4 ✅ `tls-check` rate limit keyed on Caddy IP** — key on the host being
-  checked instead.
-- [ ] **T4.5 ✅ No `.env.example`** — covered by T1.7.
-- [ ] **T4.6 ✅ MySQL healthcheck passes root pw on the command line** — use
-  `MYSQL_PWD` env so it's not in argv.
-- [ ] **T4.7 (bonus) Dead legacy artifacts** — remove `README`, `index.html`,
-  `shortenedurls.sql`.
+- [x] **T4.4 ✅ `tls-check` rate limit keyed on Caddy IP** — DONE: now keyed on the
+  requested host (20/min) so tenants aren't throttled together.
+- [x] **T4.5 ✅ No `.env.example`** — DONE (T1.7).
+- [x] **T4.6 ✅ MySQL healthcheck passes root pw on the command line** — DONE: both
+  compose files use `MYSQL_PWD` env (not argv).
+- [x] **T4.7 (bonus) Dead legacy artifacts** — DONE: removed `README`,
+  `index.html`, `shortenedurls.sql`.
 
 ## Not audited (spend limit) — follow-up pass
 - Multi-tenancy / SSO: OIDC/SAML signature + replay validation, domain-verify

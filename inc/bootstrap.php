@@ -62,7 +62,22 @@ if (!headers_sent()) {
     header('X-Frame-Options: DENY');                       // clickjacking
     header('X-Content-Type-Options: nosniff');             // MIME sniffing
     header('Referrer-Policy: strict-origin-when-cross-origin');
-    header("Content-Security-Policy: frame-ancestors 'none'");
+    // Content-Security-Policy: lock sources to self + the known third parties
+    // (Google Fonts, cdnjs qrcode, Turnstile, reCAPTCHA). 'unsafe-inline' is
+    // still needed for the theme's inline <head> script and the inline style
+    // attributes; everything else is constrained. object/base/frame-ancestors
+    // are locked down hard.
+    header(
+        "Content-Security-Policy: "
+        . "default-src 'self'; "
+        . "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://challenges.cloudflare.com https://www.google.com https://www.gstatic.com; "
+        . "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        . "font-src 'self' https://fonts.gstatic.com; "
+        . "img-src 'self' data:; "
+        . "connect-src 'self'; "
+        . "frame-src https://challenges.cloudflare.com https://www.google.com; "
+        . "form-action 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'"
+    );
     if (REQUEST_HTTPS) {
         header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
     }

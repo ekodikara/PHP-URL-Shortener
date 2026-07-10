@@ -5,8 +5,11 @@
  */
 require __DIR__ . '/inc/bootstrap.php';
 
-$token = isset($_POST['csrf']) ? $_POST['csrf'] : (isset($_GET['t']) ? $_GET['t'] : '');
-if (current_user() && hash_equals(csrf_token(), (string) $token)) {
+// POST-only + CSRF: keeps the token out of URLs/referers/logs and stops a
+// cross-site GET from force-logging-out the user.
+if ($_SERVER['REQUEST_METHOD'] === 'POST'
+    && current_user()
+    && hash_equals(csrf_token(), (string) ($_POST['csrf'] ?? ''))) {
     logout_user();
 }
 redirect_to('/');

@@ -21,7 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Throttle per IP, and per (IP + account). Keying the account limit to the
     // IP prevents a third party from locking a victim out globally by spamming
     // their email, while still stopping brute force from any single source.
-    $acct_key = 'login_acct:' . client_ip() . ':' . strtolower(trim($email));
+    // Hash the email component so an attacker can't mint unbounded distinct
+    // rate-limit rows (or overflow rl_key) by varying the submitted address.
+    $acct_key = 'login_acct:' . client_ip() . ':' . substr(hash('sha256', strtolower(trim($email))), 0, 24);
     if (!rate_limit($pdo, 'login:' . client_ip(), 10, 900)
         || !rate_limit($pdo, $acct_key, 8, 900)) {
         log_security_event($pdo, 'rate_limited', 'login:' . $email);

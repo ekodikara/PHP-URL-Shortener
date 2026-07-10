@@ -39,7 +39,7 @@ function render_header($title = '')
       <?php else: ?>
         <span class="plan-pill plan-<?= e($u['plan']) ?>"><?= e(plan_config($u['plan'])['name']) ?></span>
       <?php endif; ?>
-      <a class="btn btn-ghost" href="logout?t=<?= e(csrf_token()) ?>">Sign out</a>
+      <form class="nav-signout" method="post" action="logout"><?= csrf_field() ?><button class="btn btn-ghost" type="submit">Sign out</button></form>
     <?php else: ?>
       <a href="login">Log in</a>
       <a class="btn btn-solid" href="register">Get started</a>
@@ -112,7 +112,7 @@ function render_plans($current = null)
       <?php elseif ($is_current && $is_trial): ?>
         <button class="btn btn-ghost btn-block" disabled><?= trial_active($u) ? trial_days_left($u) . ' day' . (trial_days_left($u) === 1 ? '' : 's') . ' left' : 'Trial ended' ?></button>
       <?php elseif ($is_current): ?>
-        <a class="btn btn-ghost btn-block" href="billing-portal?t=<?= e(csrf_token()) ?>">Manage billing</a>
+        <form method="post" action="billing-portal"><?= csrf_field() ?><button class="btn btn-ghost btn-block" type="submit">Manage billing</button></form>
       <?php elseif ($is_trial): ?>
         <?php if ($u): ?>
           <button class="btn btn-ghost btn-block" disabled>New accounts only</button>

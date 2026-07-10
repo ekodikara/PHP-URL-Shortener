@@ -62,6 +62,9 @@ define('CODE_LENGTH', 6);
 // New accounts start on a time-limited trial (plan key 'free').
 define('TRIAL_DAYS', 30);
 
+// How long append-only log rows are kept before scripts/prune.php deletes them.
+define('LOG_RETENTION_DAYS', (int) (getenv('LOG_RETENTION_DAYS') ?: 90));
+
 // --- Stripe ----------------------------------------------------------------
 define('STRIPE_SECRET_KEY', getenv('STRIPE_SECRET_KEY') ?: '');
 define('STRIPE_PUBLISHABLE_KEY', getenv('STRIPE_PUBLISHABLE_KEY') ?: '');
