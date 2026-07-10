@@ -379,7 +379,8 @@ input::placeholder, textarea::placeholder { color: var(--ink-faint); }
    (ch counts + ruler) is the structural device, because length is what
    shortening actually changes. */
 .bench {
-  max-width: 600px; margin: 34px auto 0; border-radius: var(--radius);
+  /* same width as .shorten-card so the stacked hero sections align edge-to-edge */
+  max-width: 640px; margin: 34px auto 0; border-radius: var(--radius);
   padding: 22px 26px 26px; position: relative;
   background: var(--kraft); border-color: var(--rule-hi);
 }
