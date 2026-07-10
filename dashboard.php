@@ -56,6 +56,12 @@ render_header('Dashboard');
   </div>
 </section>
 
+<?php if (empty($user['email_verified'])): ?>
+<div class="card glass card-todo">
+  <p class="sub" style="margin:0">Verify your email to secure your account. <a href="verify?resend=1">Resend the verification link</a>.</p>
+</div>
+<?php endif; ?>
+
 <?php if ($links): ?>
 <section class="stat-row">
   <div class="stat glass">

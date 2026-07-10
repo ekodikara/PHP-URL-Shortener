@@ -51,8 +51,14 @@ Status legend: `[ ]` todo · `[~]` partial (env-limited) · `[x]` done
   (clicks/visit-cap keep counting); `access_log` write wrapped non-fatally;
   persistent PDO (`config.php`); session skipped on the redirect path
   (`SNIP_SKIP_SESSION`). Verified: `/my-launch` → 302 + no-store.
-- [~] **T2.7 ✅ Email verification + password reset absent** — IN PROGRESS
-  (next): password-reset flow + pluggable mailer + verification scaffolding.
+- [x] **T2.7 ✅ Email verification + password reset absent** — DONE & VERIFIED
+  end-to-end: pluggable mailer (`inc/mail.php`; dev writes to `cache/mail.log`),
+  single-use expiring tokens (`auth_tokens`, migration 002), `/forgot` (anti-
+  enumeration, rate-limited) → `/reset` (peek+consume, sets new hash), `/verify`
+  (+ resend), verification email on register, "Forgot password?" on login, and
+  a soft dashboard verify banner. Verified in-browser: reset alice's password
+  and logged in with it; resent + confirmed verification (banner cleared).
+  (Hard-gating on verified state left soft to avoid disrupting existing users.)
 
 ## Tier 3 — medium (hardening, verified where noted)
 

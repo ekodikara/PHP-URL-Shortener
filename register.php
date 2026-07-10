@@ -37,7 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($uid) {
             log_security_event($pdo, 'register', $email, $uid);
             establish_session($uid);
-            set_flash('success', 'Welcome to ' . APP_NAME . '! Your ' . TRIAL_DAYS . '-day free trial has started.');
+            send_verification_email($pdo, $uid, $email);
+            set_flash('success', 'Welcome to ' . APP_NAME . '! Your ' . TRIAL_DAYS . '-day free trial has started. Check your email to verify your address.');
             redirect_to('dashboard');
         }
     }

@@ -97,6 +97,7 @@ if (!empty($_SESSION['uid'])) {
 }
 
 require __DIR__ . '/helpers.php';
+require __DIR__ . '/mail.php';
 require __DIR__ . '/auth.php';
 require __DIR__ . '/urls.php';
 require __DIR__ . '/tokens.php';

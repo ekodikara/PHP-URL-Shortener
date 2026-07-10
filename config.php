@@ -71,6 +71,13 @@ define('STRIPE_API_VERSION', '2026-05-27.dahlia');
 // Yearly billing discount (paid annually). 0.12 = 12% off 12 months.
 define('YEARLY_DISCOUNT', 0.12);
 
+// --- Outbound mail (verification + password reset) -------------------------
+// MAIL_FROM empty = dev mode: emails are written to cache/mail.log instead of
+// being delivered (so links are retrievable without a mail server). In prod set
+// MAIL_FROM (and point PHP mail() at an SMTP relay / sendmail).
+define('MAIL_FROM', getenv('MAIL_FROM') ?: '');
+define('MAIL_REPLY_TO', getenv('MAIL_REPLY_TO') ?: '');
+
 // --- Bot protection (Cloudflare Turnstile, optional) -----------------------
 // If both keys are set (in .env), Turnstile is enforced on register/login on
 // top of the always-on honeypot + JS-proof + timing + rate-limit checks.
@@ -180,4 +187,5 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
     'enterprise', 'domains', 'sso', 'tls-check', 'health',
+    'forgot', 'reset', 'verify',
 );

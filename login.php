@@ -72,6 +72,7 @@ render_header('Log in');
       <?php if (captcha_needed($pdo)): ?><?= recaptcha_block() ?><?php endif; ?>
       <button class="btn btn-solid btn-block" type="submit">Log in</button>
     </form>
+    <p class="auth-alt"><a href="forgot">Forgot your password?</a></p>
 
     <?php if (sso_enabled()): $both_sso = oidc_enabled() && saml_enabled(); ?>
       <div class="auth-divider">or</div>
