@@ -139,8 +139,9 @@ body {
 }
 .brand-name { font-family: var(--font-display); font-weight: 800; font-size: 1.2rem; letter-spacing: 0.02em; text-transform: uppercase; }
 .nav-links { display: flex; align-items: center; gap: 18px; }
-.nav-links a { color: var(--ink-dim); text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: color 0.15s; }
-.nav-links a:hover { color: var(--ink); }
+.nav-links a { text-decoration: none; font-weight: 600; font-size: 0.95rem; transition: color 0.15s; }
+.nav-links a:not(.btn) { color: var(--ink-dim); }
+.nav-links a:not(.btn):hover { color: var(--ink); }
 
 /* light/dark toggle — a small paper switch */
 .theme-toggle {
