@@ -4,6 +4,7 @@ CREDENTIALS.local.md
 *.local.txt
 .env
 .env.*
+!.env.example
 
 # Runtime
 cache/

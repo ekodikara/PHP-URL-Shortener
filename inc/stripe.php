@@ -75,9 +75,22 @@ function activate_subscription(PDO $pdo, $user_id, $plan, $interval, $customer_i
     $stmt->execute(array($plan, $interval, $customer_id, $subscription_id, $user_id));
 }
 
-/** Downgrade a user (looked up by Stripe customer id) back to the locked free state. */
-function downgrade_by_customer(PDO $pdo, $customer_id)
+/**
+ * Downgrade a user (looked up by Stripe customer id) back to the locked free
+ * state. When $subscription_id is given, only downgrade if it matches the
+ * user's CURRENT subscription — so a late/duplicate delete for a superseded
+ * subscription can't wipe out a fresh re-subscription.
+ */
+function downgrade_by_customer(PDO $pdo, $customer_id, $subscription_id = null)
 {
+    if ($subscription_id !== null) {
+        $stmt = $pdo->prepare(
+            'UPDATE users SET plan = "free", billing_interval = NULL, stripe_subscription_id = NULL
+              WHERE stripe_customer_id = ? AND stripe_subscription_id = ?'
+        );
+        $stmt->execute(array($customer_id, $subscription_id));
+        return; // if it wasn't the current sub, we intentionally do nothing
+    }
     $stmt = $pdo->prepare(
         'UPDATE users SET plan = "free", billing_interval = NULL, stripe_subscription_id = NULL WHERE stripe_customer_id = ?'
     );
