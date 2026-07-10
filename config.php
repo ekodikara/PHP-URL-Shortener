@@ -21,6 +21,9 @@ try {
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
+            // Reuse pooled connections instead of a fresh TCP+auth handshake on
+            // every request (the redirect hot path opens one per hop).
+            PDO::ATTR_PERSISTENT         => true,
         )
     );
 } catch (PDOException $e) {
@@ -176,5 +179,5 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'favicon', 'robots', 'api', 'admin', 'cache', 'me', 'account', 'pricing',
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
-    'enterprise', 'domains', 'sso', 'tls-check',
+    'enterprise', 'domains', 'sso', 'tls-check', 'health',
 );

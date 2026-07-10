@@ -26,8 +26,9 @@ RUN printf 'expose_php = Off\n' > /usr/local/etc/php/conf.d/zz-hardening.ini \
 WORKDIR /var/www/html
 
 # Composer + PHP dependencies (Stripe SDK). Install deps first for layer caching.
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-COPY composer.json composer.lock* /var/www/html/
+# Pinned composer minor + committed composer.lock → reproducible dependency set.
+COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
+COPY composer.json composer.lock /var/www/html/
 RUN composer install --no-dev --no-interaction --prefer-dist --no-scripts
 
 # Copy application source

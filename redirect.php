@@ -2,6 +2,8 @@
 /*
  * Snip — resolve a short code and redirect, counting the visit.
  */
+// Anonymous hot path — no session needed; skip the per-request session I/O.
+define('SNIP_SKIP_SESSION', true);
 require __DIR__ . '/inc/bootstrap.php';
 require __DIR__ . '/inc/layout.php';   // themed error pages
 
@@ -36,7 +38,12 @@ if ((int) $link['domain_id'] !== (int) $cur_id) {
 }
 
 // Record who is accessing this link (security review): ip, browser, platform…
-log_access($pdo, 'redirect', $code, $link['owner_id']);
+// Best-effort: a logging hiccup must never block the redirect itself.
+try {
+    log_access($pdo, 'redirect', $code, $link['owner_id']);
+} catch (\Throwable $e) {
+    error_log('access log failed for ' . $code . ': ' . $e->getMessage());
+}
 
 // Disabled link or suspended owner → gone.
 if (!empty($link['link_blocked']) || !empty($link['owner_blocked'])) {
@@ -77,5 +84,9 @@ try {
     error_log('click count failed: ' . $e->getMessage());
 }
 
-header('Location: ' . $link['long_url'], true, 301);
+// 302 (not 301): a permanent redirect gets cached by browsers/proxies, after
+// which repeat visits never reach us — silently breaking click counting and
+// the monthly visit cap. Temporary + no-store keeps every visit countable.
+header('Cache-Control: no-store, max-age=0');
+header('Location: ' . $link['long_url'], true, 302);
 exit;

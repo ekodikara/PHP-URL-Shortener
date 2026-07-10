@@ -30,25 +30,29 @@ Status legend: `[ ]` todo · `[~]` partial (env-limited) · `[x]` done
 
 ## Tier 2 — high (operate-in-the-dark / correctness)
 
-- [ ] **T2.1 ⚠️ No monitoring / health / alerting** — add a `/health` endpoint
-  (DB check) for uptime monitors; document error-tracking hook.
-- [ ] **T2.2 ⚠️ Backups: no tested restore, no encryption, no failure alerting**
-  — add `restore.sh`, optional client-side encryption + failure trap to
-  `backup.sh`.
-- [ ] **T2.3 ⚠️ No automated tests** for quota/pricing/slug/redirect/auth — add
-  PHPUnit + tests for the pure/critical logic; wire a runner.
-- [ ] **T2.4 ⚠️ No global exception boundary** — uncaught errors render blank
-  500s / leak HTML from JSON endpoints. Fix: set exception/error/shutdown
-  handlers in `inc/bootstrap.php` → themed 500 (JSON for AJAX), details logged.
-- [ ] **T2.5 ⚠️ Non-reproducible builds** — `composer.lock` gitignored; floating
-  base-image tag. Fix: commit `composer.lock`, pin the base image.
-- [ ] **T2.6 ⚠️ Redirect hot path** — 301 w/o cache header breaks click counting;
-  synchronous `access_log` write; new PDO per request; session on the anon hot
-  path. Fix: 302 + `Cache-Control: no-store`; wrap logging non-fatally;
-  persistent PDO; skip session for redirect.
-- [ ] **T2.7 ✅ Email verification + password reset absent** (adjusted medium) —
-  no email transport exists. Fix: at minimum wire a mail transport + password
-  reset; email verification gate. (Largest feature; may stage.)
+- [x] **T2.1 ⚠️ No monitoring / health / alerting** — DONE: `/health` endpoint
+  (`health.php`) returns JSON + 200/503 on a DB check for uptime monitors.
+  Verified live. (Error-tracking service is external; hook documented.)
+- [x] **T2.2 ⚠️ Backups: no tested restore/encryption/alerting** — DONE:
+  `backup.sh` gains an ERR trap → `BACKUP_ALERT_URL` webhook, empty-dump guard,
+  optional `BACKUP_GPG_RECIPIENT` client-side encryption; added `restore.sh`
+  (latest-or-named, decrypts, confirms before overwrite).
+- [x] **T2.3 ⚠️ No automated tests** — DONE: PHPUnit suite (`tests/`, `phpunit.xml`,
+  `scripts/test.sh`) covering pricing math, money formatting, slug validation,
+  code generation. **Verified green: 12 tests, 424 assertions.** (Redirect/auth
+  integration tests are a follow-up.)
+- [x] **T2.4 ⚠️ No global exception boundary** — DONE: `inc/bootstrap.php` sets
+  exception + shutdown handlers → self-contained themed 500 (JSON for XHR),
+  details to `error_log`. Verified normal pages unaffected.
+- [x] **T2.5 ⚠️ Non-reproducible builds** — DONE: committed `composer.lock`
+  (un-ignored), pinned composer image to `composer:2.8`, Dockerfile now
+  requires the lock.
+- [x] **T2.6 ⚠️ Redirect hot path** — DONE: 302 + `Cache-Control: no-store`
+  (clicks/visit-cap keep counting); `access_log` write wrapped non-fatally;
+  persistent PDO (`config.php`); session skipped on the redirect path
+  (`SNIP_SKIP_SESSION`). Verified: `/my-launch` → 302 + no-store.
+- [~] **T2.7 ✅ Email verification + password reset absent** — IN PROGRESS
+  (next): password-reset flow + pluggable mailer + verification scaffolding.
 
 ## Tier 3 — medium (hardening, verified where noted)
 
