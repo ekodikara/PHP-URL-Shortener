@@ -304,3 +304,7 @@ input::placeholder { color: var(--ink-faint); }
   .nav-links a:not(.btn) { display: none; }
   .links-table .long { max-width: 140px; }
 }
+
+/* Footer legal/abuse links */
+.foot-links a { color: var(--ink-dim); text-decoration: none; }
+.foot-links a:hover { color: var(--ink); }

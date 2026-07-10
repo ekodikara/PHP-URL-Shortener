@@ -286,6 +286,66 @@ function captcha_gate(PDO $pdo, $tag = '')
     return 'captcha';
 }
 
+// --- Destination URL safety (Google Safe Browsing) ---------------------------
+
+function safe_browsing_enabled()
+{
+    return SAFE_BROWSING_API_KEY !== '';
+}
+
+/**
+ * Threat type for a destination URL per Google Safe Browsing v4, or '' when
+ * clean/unknown. Verdicts are cached (url_reputation) for URL_SCAN_TTL seconds.
+ * No API key or lookup failure → '' (fail open; failures are not cached).
+ */
+function url_threat(PDO $pdo, $url)
+{
+    if (!safe_browsing_enabled() || $url === '') {
+        return '';
+    }
+    $hash = hash('sha256', $url);
+    try {
+        $sel = $pdo->prepare('SELECT threat, checked FROM url_reputation WHERE url_hash = ?');
+        $sel->execute(array($hash));
+        $row = $sel->fetch();
+        if ($row && (time() - (int) $row['checked']) < URL_SCAN_TTL) {
+            return (string) $row['threat'];
+        }
+    } catch (Exception $e) { /* fall through to live lookup */ }
+
+    $body = json_encode(array(
+        'client'     => array('clientId' => 'snip', 'clientVersion' => '1.0'),
+        'threatInfo' => array(
+            'threatTypes'      => array('MALWARE', 'SOCIAL_ENGINEERING', 'UNWANTED_SOFTWARE', 'POTENTIALLY_HARMFUL_APPLICATION'),
+            'platformTypes'    => array('ANY_PLATFORM'),
+            'threatEntryTypes' => array('URL'),
+            'threatEntries'    => array(array('url' => $url)),
+        ),
+    ));
+    $ch = curl_init('https://safebrowsing.googleapis.com/v4/threatMatches:find?key=' . rawurlencode(SAFE_BROWSING_API_KEY));
+    curl_setopt_array($ch, array(
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_TIMEOUT        => 4,
+        CURLOPT_HTTPHEADER     => array('Content-Type: application/json'),
+        CURLOPT_POSTFIELDS     => $body,
+    ));
+    $resp = curl_exec($ch);
+    $http = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+    if ($resp === false || $http !== 200) {
+        return '';                 // transient failure — don't cache as clean
+    }
+    $json = json_decode((string) $resp, true);
+    $threat = isset($json['matches'][0]['threatType']) ? (string) $json['matches'][0]['threatType'] : '';
+    try {
+        $pdo->prepare('INSERT INTO url_reputation (url_hash, threat, checked) VALUES (?, ?, ?)
+                       ON DUPLICATE KEY UPDATE threat = ?, checked = ?')
+            ->execute(array($hash, $threat, time(), $threat, time()));
+    } catch (Exception $e) { /* best effort */ }
+    return $threat;
+}
+
 // --- Access info collection --------------------------------------------------
 
 /** Crude browser/platform parse from a User-Agent string. */

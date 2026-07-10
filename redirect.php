@@ -72,12 +72,49 @@ if ($cap !== null) {
     }
 }
 
+// Re-check the destination against Safe Browsing (cached). A link whose target
+// turned malicious after creation is auto-disabled and never redirected.
+$threat = url_threat($pdo, $link['long_url']);
+if ($threat !== '') {
+    try {
+        $pdo->prepare('UPDATE urls SET blocked = 1 WHERE id = ?')->execute(array($link['id']));
+    } catch (PDOException $e) {
+        error_log('auto-block failed: ' . $e->getMessage());
+    }
+    log_security_event($pdo, 'auto_block_malicious', $threat . ' ' . $code, $link['owner_id']);
+    http_response_code(410);
+    die('This link has been disabled.');
+}
+
 // Count the visit on the link (best-effort, lifetime counter).
 try {
     $upd = $pdo->prepare('UPDATE urls SET clicks = clicks + 1 WHERE id = ?');
     $upd->execute(array($link['id']));
 } catch (PDOException $e) {
     error_log('click count failed: ' . $e->getMessage());
+}
+
+// Links owned by trial accounts go through an interstitial notice instead of a
+// silent redirect — visitors see where they're headed and can report abuse.
+// Paid plans redirect directly.
+if (!plan_is_paid(array('plan' => $link['plan']))) {
+    require __DIR__ . '/inc/layout.php';
+    $dest = $link['long_url'];
+    $dest_host = parse_url($dest, PHP_URL_HOST);
+    render_header('Redirect notice');
+    ?>
+    <div class="card glass" style="max-width:560px;margin:48px auto;text-align:center">
+      <h2>You're leaving <?= e(APP_NAME) ?></h2>
+      <p class="sub">This short link points to</p>
+      <p style="font-size:1.15rem;font-weight:600;margin:6px 0"><?= e($dest_host) ?></p>
+      <p class="long" style="color:var(--ink-dim);word-break:break-all;font-size:0.85rem"><?= e($dest) ?></p>
+      <p class="sub">Only continue if you trust this destination.</p>
+      <a class="btn btn-solid btn-block" rel="noopener nofollow" href="<?= e($dest) ?>">Continue to <?= e($dest_host) ?></a>
+      <p style="margin-top:14px;font-size:0.85rem"><a href="report?code=<?= e($code) ?>">Report this link</a></p>
+    </div>
+    <?php
+    render_footer();
+    exit;
 }
 
 header('Location: ' . $link['long_url'], true, 301);

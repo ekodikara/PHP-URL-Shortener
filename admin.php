@@ -35,6 +35,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare('UPDATE urls SET blocked = ? WHERE code = ?')->execute(array($block, $code));
         log_security_event($pdo, $block ? 'admin_block_link' : 'admin_unblock_link', $code, $me['id']);
         set_flash('success', $block ? 'Link disabled.' : 'Link enabled.');
+    } elseif ($action === 'resolve_report' || $action === 'dismiss_report') {
+        $rid = (int) ($_POST['report_id'] ?? 0);
+        $status = $action === 'resolve_report' ? 'resolved' : 'dismissed';
+        // Resolving = the abuse was real: also disable the reported link.
+        if ($status === 'resolved') {
+            $sel = $pdo->prepare('SELECT code FROM link_reports WHERE id = ?');
+            $sel->execute(array($rid));
+            if ($rcode = $sel->fetchColumn()) {
+                $pdo->prepare('UPDATE urls SET blocked = 1 WHERE code = ?')->execute(array($rcode));
+                log_security_event($pdo, 'admin_block_link', $rcode . ' (report #' . $rid . ')', $me['id']);
+            }
+        }
+        $pdo->prepare('UPDATE link_reports SET status = ? WHERE id = ?')->execute(array($status, $rid));
+        set_flash('success', $status === 'resolved' ? 'Report resolved — link disabled.' : 'Report dismissed.');
     }
     redirect_to('admin');
 }
@@ -42,6 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $users   = $pdo->query('SELECT id, email, plan, is_admin, blocked, blocked_reason, created FROM users ORDER BY created DESC LIMIT 100')->fetchAll();
 $flagged = $pdo->query('SELECT code, long_url, user_id, blocked, clicks FROM urls WHERE blocked = 1 ORDER BY id DESC LIMIT 50')->fetchAll();
 $leads   = $pdo->query('SELECT ts, name, email, company, message FROM enterprise_leads ORDER BY id DESC LIMIT 25')->fetchAll();
+$reports = $pdo->query(
+    "SELECT r.id, r.ts, r.code, r.reason, r.detail, r.email, r.status, u.long_url, u.blocked AS link_blocked
+       FROM link_reports r LEFT JOIN urls u ON u.code = r.code
+      ORDER BY r.status = 'open' DESC, r.id DESC LIMIT 50"
+)->fetchAll();
 $access  = $pdo->query('SELECT ts, event, code, ip, browser, platform, referer FROM access_log ORDER BY id DESC LIMIT 25')->fetchAll();
 $sec     = $pdo->query('SELECT ts, event, ip, detail FROM security_log ORDER BY id DESC LIMIT 25')->fetchAll();
 
@@ -118,6 +137,44 @@ render_header('Admin');
     </tbody>
   </table>
   <?php endif; ?>
+</div>
+
+<div class="card glass">
+  <h2>Abuse reports</h2>
+  <div style="overflow-x:auto">
+  <table class="links-table">
+    <thead><tr><th>When</th><th>Code</th><th>Destination</th><th>Reason</th><th>Detail</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>
+    <?php foreach ($reports as $r): ?>
+      <tr>
+        <td><?= e(gmdate('m-d H:i', (int) $r['ts'])) ?></td>
+        <td class="short"><?= e($r['code']) ?><?= $r['link_blocked'] ? ' <span class="custom-badge">disabled</span>' : '' ?></td>
+        <td class="long" title="<?= e($r['long_url']) ?>"><?= e($r['long_url'] ?? '(deleted)') ?></td>
+        <td><?= e($r['reason']) ?></td>
+        <td class="long" title="<?= e($r['detail']) ?>"><?= e($r['detail']) ?></td>
+        <td><?= e($r['status']) ?></td>
+        <td>
+          <?php if ($r['status'] === 'open'): ?>
+          <form method="post" action="admin" style="display:inline">
+            <?= csrf_field() ?>
+            <input type="hidden" name="report_id" value="<?= e($r['id']) ?>">
+            <input type="hidden" name="action" value="resolve_report">
+            <button class="icon-btn danger" type="submit" title="Abuse confirmed — disable link">⛔</button>
+          </form>
+          <form method="post" action="admin" style="display:inline">
+            <?= csrf_field() ?>
+            <input type="hidden" name="report_id" value="<?= e($r['id']) ?>">
+            <input type="hidden" name="action" value="dismiss_report">
+            <button class="icon-btn" type="submit" title="Dismiss report">✕</button>
+          </form>
+          <?php endif; ?>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    <?php if (!$reports): ?><tr><td colspan="7" style="color:var(--ink-faint)">No reports yet.</td></tr><?php endif; ?>
+    </tbody>
+  </table>
+  </div>
 </div>
 
 <div class="card glass">
