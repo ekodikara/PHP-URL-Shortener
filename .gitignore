@@ -27,3 +27,6 @@ vendor/
 crash.log
 docs/_render*
 .phpunit.result.cache
+
+# GeoIP database (fetched by scripts/update-geoip.sh; baked into image at build if present)
+data/*.mmdb

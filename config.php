@@ -137,6 +137,10 @@ define('ADULT_BLOCKLIST', getenv('ADULT_BLOCKLIST') ?: __DIR__ . '/data/adult-do
 // date component means hashes can't be linked across days; the secret means
 // they can't be reversed — so raw IPs can later be dropped for privacy.
 define('ANALYTICS_SALT', getenv('ANALYTICS_SALT') ?: hash('sha256', 'snip-analytics|' . DB_PASSWORD . '|' . APP_NAME));
+// IP→country geo database (.mmdb; GeoLite2-Country or DB-IP Lite). Fetched by
+// scripts/update-geoip.sh (gitignored; baked into the image at build if present).
+// Empty/absent = geo disabled (fail-open).
+define('GEOIP_DB', getenv('GEOIP_DB') ?: __DIR__ . '/data/dbip-country-lite.mmdb');
 
 // --- Enterprise SSO (env-gated; active only when configured) ---------------
 // OIDC: set issuer (for discovery) OR the explicit endpoints, plus client creds.

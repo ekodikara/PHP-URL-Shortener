@@ -43,16 +43,35 @@ function link_owned_by(PDO $pdo, $user_id, $code)
     return $stmt->fetch() ?: null;
 }
 
-/** Total + unique clicks for a code since $since (0 = all time). */
+/** Browser labels (from parse_user_agent) that mark automated / bot traffic. */
+function analytics_bot_browsers()
+{
+    return array('Bot', 'curl', 'Python');
+}
+
+/**
+ * Total + unique clicks for a code since $since (0 = all time), plus a bot
+ * count (a cheap first-pass human-vs-bot split: clients whose UA parsed to a
+ * known automated agent). 'uniques' counts humans only.
+ */
 function link_click_summary(PDO $pdo, $code, $since)
 {
     $stmt = $pdo->prepare(
-        'SELECT COUNT(*) AS clicks, COUNT(DISTINCT visitor_hash) AS uniques
-           FROM access_log WHERE code = ? AND ts >= ?'
+        "SELECT COUNT(*) AS clicks,
+                COUNT(DISTINCT CASE WHEN browser NOT IN ('Bot','curl','Python') THEN visitor_hash END) AS uniques,
+                SUM(CASE WHEN browser IN ('Bot','curl','Python') THEN 1 ELSE 0 END) AS bots
+           FROM access_log WHERE code = ? AND ts >= ?"
     );
     $stmt->execute(array($code, (int) $since));
     $r = $stmt->fetch();
-    return array('clicks' => (int) $r['clicks'], 'uniques' => (int) $r['uniques']);
+    $clicks = (int) $r['clicks'];
+    $bots   = (int) $r['bots'];
+    return array(
+        'clicks'  => $clicks,
+        'uniques' => (int) $r['uniques'],   // humans only
+        'bots'    => $bots,
+        'humans'  => $clicks - $bots,
+    );
 }
 
 /**
@@ -93,7 +112,7 @@ function link_click_timeseries(PDO $pdo, $code, $since, $days)
  */
 function link_breakdown(PDO $pdo, $code, $since, $column, $limit = 10)
 {
-    $allowed = array('browser', 'platform', 'device', 'referer');
+    $allowed = array('browser', 'platform', 'device', 'referer', 'country');
     if (!in_array($column, $allowed, true)) {
         return array();               // never interpolate an unvetted column
     }

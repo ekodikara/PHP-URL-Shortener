@@ -396,13 +396,14 @@ function log_access(PDO $pdo, $event, $code = null, $user_id = null)
     // Per-link unique-visitor fingerprint (daily-salted; no cookie). Only for
     // code-scoped events so account-level events don't skew per-link uniques.
     $vhash = ($code !== null && function_exists('visitor_hash')) ? visitor_hash($ip, $ua, (string) $code) : '';
+    $country = function_exists('geoip_country') ? geoip_country($ip) : '';
     try {
         $stmt = $pdo->prepare(
-            'INSERT INTO access_log (ts, event, code, user_id, ip, browser, platform, device, referer, user_agent, visitor_hash)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO access_log (ts, event, code, user_id, ip, browser, platform, device, country, referer, user_agent, visitor_hash)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array(
-            time(), $event, $code, $user_id, $ip, $p['browser'], $p['platform'], $p['device'],
+            time(), $event, $code, $user_id, $ip, $p['browser'], $p['platform'], $p['device'], $country,
             mb_substr(isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '', 0, 255),
             mb_substr($ua, 0, 255), $vhash,
         ));

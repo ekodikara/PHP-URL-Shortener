@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS `access_log` (
   `browser`    VARCHAR(40) NOT NULL DEFAULT '',
   `platform`   VARCHAR(40) NOT NULL DEFAULT '',
   `device`     VARCHAR(10) NOT NULL DEFAULT '',    -- Mobile | Tablet | Desktop (from UA)
+  `country`    CHAR(2) NOT NULL DEFAULT '',         -- ISO-3166 alpha-2 (from GeoIP), '' = unknown
   `referer`    VARCHAR(255) NOT NULL DEFAULT '',
   `user_agent` VARCHAR(255) NOT NULL DEFAULT '',
   `visitor_hash` CHAR(64) NOT NULL DEFAULT '',     -- daily-salted hash(ip+ua+code) for unique counts

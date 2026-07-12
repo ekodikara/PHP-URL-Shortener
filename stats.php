@@ -42,10 +42,23 @@ $refs     = link_referrers($pdo, $code, $since);
 $browsers = link_breakdown($pdo, $code, $since, 'browser');
 $oses     = link_breakdown($pdo, $code, $since, 'platform');
 $devices  = link_breakdown($pdo, $code, $since, 'device');
+$countries = array();
+foreach (link_breakdown($pdo, $code, $since, 'country') as $r) {
+    $cc = $r['key'];
+    $countries[] = array(
+        'key'    => $cc === '' ? "\u{1F3F3} Unknown" : country_flag($cc) . ' ' . $cc,
+        'clicks' => $r['clicks'],
+    );
+}
 
 $short   = BASE_HREF . $link['code'];
 $avgDay  = $days > 0 ? $summary['clicks'] / $days
                      : (count($series) ? $summary['clicks'] / max(1, count($series)) : 0);
+$bots    = (int) ($summary['bots'] ?? 0);
+$humans  = (int) ($summary['humans'] ?? $summary['clicks']);
+$clicksSub = $bots > 0
+    ? number_format($humans) . ' human · ' . number_format($bots) . ' bot'
+    : $rangeLabel;
 
 // --- tiny view helpers (closures avoid page-include redefinition) -----------
 $chart = function (array $series) {
@@ -112,12 +125,12 @@ render_header('Stats · /' . $link['code']);
   <div class="stat glass">
     <div class="k">Clicks</div>
     <div class="v"><?= number_format($summary['clicks']) ?></div>
-    <div class="s"><?= e($rangeLabel) ?></div>
+    <div class="s"><?= e($clicksSub) ?></div>
   </div>
   <div class="stat glass">
     <div class="k">Unique visitors</div>
     <div class="v"><?= number_format($summary['uniques']) ?></div>
-    <div class="s">by IP + device, per day</div>
+    <div class="s">humans · by IP + device / day</div>
   </div>
   <div class="stat glass">
     <div class="k">Lifetime clicks</div>
@@ -144,6 +157,10 @@ render_header('Stats · /' . $link['code']);
 </div>
 
 <div class="analytics-grid">
+  <div class="card glass">
+    <h2>Countries</h2>
+    <?= $ranked($countries) ?>
+  </div>
   <div class="card glass">
     <h2>Top referrers</h2>
     <?= $ranked($refs, 'Direct') ?>
