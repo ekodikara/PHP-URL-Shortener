@@ -388,12 +388,23 @@ intentionally serves `noindex`). Reports land in `.lighthouseci/reports/`
 
 ## Known gaps / TODO
 
-- **Billing is demo-only**: `upgrade.php` flips the plan with no payment. Real
-  billing needs Stripe Checkout + a verified webhook before changing `users.plan`.
-- **QR codes load qrcodejs from cdnjs** (needs internet). Vendor it locally for
+Most original gaps are CLOSED: billing is **real** (Stripe Checkout + verified,
+idempotent webhook — no demo plan-flip), TLS is via Caddy in prod (local dev
+compose is HTTP only), and password reset / email verification / auth rate-limiting
+are implemented. Legacy artifacts were removed.
+
+Remaining for a public launch (see `DEPLOY.md` + `PRE-GO-LIVE.md`):
+- **Email delivery (launch gate)**: prod needs a real SMTP relay + SPF/DKIM/DMARC —
+  the base image has no MTA, and `REQUIRE_EMAIL_VERIFICATION` is on, so broken mail
+  dead-ends signups.
+- **Provisioning**: set `SAFE_BROWSING_API_KEY`, real reCAPTCHA keys (blank fails
+  CLOSED), Stripe LIVE keys + the Dashboard webhook, and run
+  `scripts/update-geoip.sh` before `docker compose build` (the `.mmdb` is gitignored).
+  Migrations must be applied every deploy via `scripts/migrate.php`.
+- **QR codes load qrcodejs from cdnjs** (needs internet) — vendor it locally for
   offline use.
-- HTTP only (no TLS) in the current Docker setup — dev/local only.
-- No password reset / email verification / rate limiting on auth yet.
-- Old artifacts (`README`, `index.html`, `shortenedurls.sql`) are unused and could
-  be removed.
-- Nothing is committed yet — all of this is uncommitted working-tree changes.
+- **Error monitoring** (e.g. Sentry) is not wired — only container logs today.
+- **Legal/compliance**: Privacy Policy (Australian Privacy Act / APPs; Moonxt is
+  AU-based), data-retention doc, and account deletion / data export are not built.
+- **Single box** = single point of failure; no off-instance DB replica yet (fine
+  to launch; graduate the DB to RDS when you outgrow it).

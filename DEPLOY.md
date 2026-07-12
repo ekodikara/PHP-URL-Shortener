@@ -48,27 +48,38 @@ chmod 600 .env
 
 ```dotenv
 # Public site
-SITE_DOMAIN=sho.rt                 # bare domain Caddy serves + gets a cert for
-SITE_HOST=https://sho.rt/          # trailing slash — used for BASE_HREF & Stripe URLs
+SITE_DOMAIN=jmpz.cc                 # bare domain Caddy serves + gets a cert for
+SITE_HOST=https://jmpz.cc/          # trailing slash — used for BASE_HREF & Stripe URLs
 TRUSTED_PROXIES=private            # trust Caddy's X-Forwarded-For (internal network)
 
 # Database (strong, unique)
 DB_PASSWORD=__change_me__
 DB_ROOT_PASSWORD=__change_me_too__
 
-# Stripe (LIVE or test keys; roll the ones shared during dev)
+# Stripe LIVE keys (Australian Stripe account — see "Payments" note at the end)
 STRIPE_PUBLISHABLE_KEY=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=             # from the Dashboard webhook you create in step 6
 
-# Google reCAPTCHA v2 (real keys for prod; blank falls back to Google test keys)
+# Google reCAPTCHA v2 — REAL keys required. Blank FAILS CLOSED (blocks clients
+# the adaptive gate deems suspicious), so do NOT ship blank.
 RECAPTCHA_SITE_KEY=
 RECAPTCHA_SECRET=
 
-# Optional VPN/proxy detection
+# Outbound mail — REQUIRED. Email verification is enforced, so if mail doesn't
+# deliver, signups dead-end. Set a from-address AND wire a real SMTP relay
+# (SES / Postmark / Resend — the base image has no MTA) + SPF/DKIM/DMARC DNS.
+MAIL_FROM=noreply@jmpz.cc
+
+# Link safety — Google Safe Browsing v4 key (blank = malware/phishing checks OFF).
+SAFE_BROWSING_API_KEY=
+# Optional: IPQualityScore (VPN + adult/URL-category), and the IP→country DB path
+# for click-analytics geo (fetched by scripts/update-geoip.sh; see step 5).
 IPQS_API_KEY=
+GEOIP_DB=
 
 ADMIN_EMAILS=you@example.com
+ABUSE_EMAIL=abuse@jmpz.cc          # shown on /report + /terms (default abuse@<host>)
 ```
 
 ## 4. DNS
@@ -80,12 +91,17 @@ EC2 so it survives reboots; Lightsail static IP is free while attached).
 
 ```bash
 cd /opt/snip
+./scripts/update-geoip.sh          # fetch IP→country DB (baked into the image; skip to disable geo)
 docker compose -f docker-compose.prod.yml up -d --build
+# Apply DB migrations — REQUIRED on every deploy (schema.sql is only the fresh-volume baseline):
+docker compose -f docker-compose.prod.yml exec -T web php scripts/migrate.php
 docker compose -f docker-compose.prod.yml logs -f caddy   # watch the cert issue
 ```
 
 Caddy provisions a Let's Encrypt cert automatically once DNS resolves and 80/443
-are open. Visit `https://SITE_DOMAIN`.
+are open. Visit `https://SITE_DOMAIN`. Then smoke-test: `/health` returns 200,
+register → **receive the verification email** → verify → create a link → the
+redirect works → a real card checkout activates the plan.
 
 ## 6. Stripe webhook
 
@@ -108,11 +124,17 @@ so the MySQL data volume itself is recoverable.
 
 ```bash
 cd /opt/snip && git pull
+./scripts/update-geoip.sh          # optional: refresh the geo DB (monthly-ish)
 docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml exec -T web php scripts/migrate.php   # apply any new migrations
 ```
 
-`schema.sql` only auto-loads on a **fresh** db volume. For schema changes on a live
-DB, apply the `ALTER`s manually (see this repo's history) — don't wipe the volume.
+Schema changes ship as numbered files in `migrations/`; **`scripts/migrate.php`**
+(forward-only, tracked in `schema_migrations`) applies them idempotently and is
+**required on every deploy**. `schema.sql` is only the fresh-volume baseline — never
+wipe the volume to "reload" it. The bundled adult/disposable blocklists are
+committed; refresh them with `scripts/update-adult-blocklist.sh` /
+`update-disposable-emails.sh` when desired.
 
 ## Notes / gotchas
 - **TLS terminates at Caddy**; PHP sees HTTP. The app reads `X-Forwarded-Proto`
@@ -123,3 +145,20 @@ DB, apply the `ALTER`s manually (see this repo's history) — don't wipe the vol
   every visitor as the proxy. If you later add CloudFront/ALB, trust those instead.
 - Single instance = single point of failure. Fine to start; when you outgrow it,
   graduate the DB to RDS and the app to ECS/ALB behind the same `client_ip()` logic.
+- **Payments (Australia).** Moonxt is Australian, so **Stripe is self-serve** —
+  activate with an **ABN + Australian bank account + business verification**; no
+  invite or cross-border approval needed. **GST (10%)** applies once turnover
+  reaches **AUD $75k/yr** — enable **Stripe Tax** to compute/collect it. The
+  Stripe integration is already built, so it's the default. A Merchant-of-Record
+  (Paddle / Lemon Squeezy) is only worth adopting to offload global sales-tax
+  compliance, and would replace `inc/stripe.php`.
+- **Email deliverability is a launch gate.** `REQUIRE_EMAIL_VERIFICATION` is on
+  and the base image has no MTA — point PHP `mail()` at an SMTP relay
+  (SES/Postmark/Resend) and add **SPF/DKIM/DMARC** for `SITE_DOMAIN`, or
+  verification emails silently fail and new users can't create links.
+- **Privacy.** Visitor IPs are stored in `access_log`; publish a Privacy Policy
+  under the **Australian Privacy Act / APPs** (GDPR only applies if you target EU
+  users). `LOG_RETENTION_DAYS` caps how long IPs are kept.
+- **GeoIP data.** `data/*.mmdb` is gitignored — run `scripts/update-geoip.sh`
+  before `docker compose build` so the IP→country DB is baked in; otherwise
+  analytics country shows "Unknown" (fail-open).
