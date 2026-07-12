@@ -22,6 +22,14 @@ if (trial_expired($user)):
   <a class="btn btn-solid" href="upgrade">See plans →</a>
 </div>
 <?php return; endif; ?>
+<?php if (REQUIRE_EMAIL_VERIFICATION && empty($user['email_verified'])): ?>
+<div class="result-inner" style="display:block;text-align:center" role="status">
+  <p style="margin:0 0 14px;color:var(--ink-dim)">
+    Verify your email to start creating links. We sent a link to <strong><?= e($user['email']) ?></strong>.
+  </p>
+  <a class="btn btn-solid" href="verify?resend=1">Resend verification email</a>
+</div>
+<?php return; endif; ?>
 <?php if ($__at_limit): ?>
 <div class="result-inner limit-hit" style="display:block;text-align:center" role="status">
   <p style="margin:0 0 14px;color:var(--ink-dim)"><?= e(url_limit_message($__plan)) ?></p>

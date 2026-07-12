@@ -107,6 +107,12 @@ define('IPQS_API_KEY', getenv('IPQS_API_KEY') ?: '');
 // An IP is "suspicious" after this many bad events in the window.
 define('SUSPICION_EVENTS', 5);
 define('SUSPICION_WINDOW', 3600);
+// Anti-bot registration: reject disposable/temporary email providers at sign-up.
+define('DISPOSABLE_EMAIL_LIST', getenv('DISPOSABLE_EMAIL_LIST') ?: __DIR__ . '/data/disposable-email-domains.txt');
+define('BLOCK_DISPOSABLE_EMAIL', getenv('BLOCK_DISPOSABLE_EMAIL') !== '0');
+// Require a verified email before a user can create NEW links (existing links
+// keep working). Defeats bot/throwaway accounts that can't receive the email.
+define('REQUIRE_EMAIL_VERIFICATION', getenv('REQUIRE_EMAIL_VERIFICATION') !== '0');
 
 // Admins (comma-separated emails) get the /admin panel. Default empty: grant
 // admin only via the users.is_admin column (so a self-registered email can't

@@ -27,6 +27,17 @@ if (!empty($user['blocked'])) {
 
 csrf_check();
 
+// New links require a verified email (anti-bot / anti-abuse). Existing links
+// keep redirecting; this only gates creating MORE.
+if (REQUIRE_EMAIL_VERIFICATION && empty($user['email_verified'])) {
+    $msg = 'Please verify your email to start creating links — check your inbox, or resend from your dashboard.';
+    if (wants_json()) {
+        json_response(array('error' => $msg, 'verify' => true), 403);
+    }
+    set_flash('error', $msg);
+    redirect_to('dashboard');
+}
+
 // Suspicious clients must solve a captcha before creating links.
 if (($gate = captcha_gate($pdo, 'shorten')) !== '') {
     $msg = $gate === 'captcha'

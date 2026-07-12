@@ -218,6 +218,50 @@ function ip_is_vpn(PDO $pdo, $ip)
     return $vpn;
 }
 
+/** Disposable/temporary email domains as a lookup set (loaded + cached once). */
+function disposable_email_domains()
+{
+    static $set = null;
+    if ($set !== null) {
+        return $set;
+    }
+    $path = DISPOSABLE_EMAIL_LIST;
+    $set = (is_string($path) && is_file($path) && is_readable($path) && function_exists('parse_hosts_blocklist'))
+        ? parse_hosts_blocklist(file_get_contents($path))
+        : array();
+    return $set;
+}
+
+/**
+ * Is $email from a known disposable/temporary provider? Checks the exact host
+ * and its registrable domain (so subdomains of a throwaway provider are caught).
+ */
+function is_disposable_email($email)
+{
+    if (!BLOCK_DISPOSABLE_EMAIL) {
+        return false;
+    }
+    $at = strrpos((string) $email, '@');
+    if ($at === false) {
+        return false;
+    }
+    $host = strtolower(trim(substr((string) $email, $at + 1)));
+    if ($host === '') {
+        return false;
+    }
+    $set = disposable_email_domains();
+    if (isset($set[$host])) {
+        return true;
+    }
+    if (function_exists('registrable_domain')) {
+        $reg = registrable_domain($host);
+        if ($reg !== $host && isset($set[$reg])) {
+            return true;
+        }
+    }
+    return false;
+}
+
 /** Is the current client suspicious (spammer or VPN/proxy)? */
 function is_suspicious(PDO $pdo)
 {

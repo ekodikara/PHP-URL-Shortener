@@ -242,6 +242,18 @@ so paid users can drive it from AI assistants.
   Turnstile widget; `form_guard_check()` rejects honeypot-filled, sub-2s, or
   no-JS submissions. So scripted/curl signups are blocked while real browsers
   (incl. Playwright driving the UI) pass.
+- **Disposable-email block** — `is_disposable_email()` (inc/security.php) rejects
+  throwaway providers at registration (`register.php`), matching the host or its
+  registrable domain against a vendored ~8k-domain list
+  (`data/disposable-email-domains.txt`, refreshed by
+  `scripts/update-disposable-emails.sh`). Toggle `BLOCK_DISPOSABLE_EMAIL`.
+- **Email verification enforced** — with `REQUIRE_EMAIL_VERIFICATION` (default on),
+  creating NEW links requires a verified email: `shorten.php` blocks unverified
+  users (existing links keep redirecting) and `inc/shorten_box.php` shows a
+  "verify to create" gate instead of the form. This neuters bot/throwaway accounts
+  that can't receive the verification email. (MCP is unaffected — it's paid +
+  token-authed.) Verification itself is the existing `verify.php` / `auth_tokens`
+  flow.
 - **Cloudflare Turnstile (optional)** — enforced only when `TURNSTILE_SITE_KEY`
   and `TURNSTILE_SECRET` are set in `.env`; otherwise the honeypot/JS/timing
   layers carry it. `turnstile_script()` is injected in the layout head.

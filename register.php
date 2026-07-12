@@ -32,6 +32,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = $gate === 'captcha'
             ? 'Please complete the verification below and try again.'
             : 'Suspicious activity detected. Please try again later.';
+    } elseif (is_disposable_email($email)) {
+        // Throwaway inboxes are a bot-signup vector — require a real address.
+        log_security_event($pdo, 'bot_blocked', 'register:disposable_email');
+        http_response_code(422);
+        $error = 'Please use a permanent email address — disposable or temporary email providers aren\'t allowed.';
     } else {
         list($uid, $error) = register_user($pdo, $email, $password);
         if ($uid) {
