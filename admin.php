@@ -49,6 +49,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $pdo->prepare('UPDATE link_reports SET status = ? WHERE id = ?')->execute(array($status, $rid));
         set_flash('success', $status === 'resolved' ? 'Report resolved — link disabled.' : 'Report dismissed.');
+    } elseif ($action === 'add_blocked_domain') {
+        $domain = normalize_blockable_host((string) ($_POST['domain'] ?? ''));
+        $note   = mb_substr(trim((string) ($_POST['note'] ?? '')), 0, 190);
+        if ($domain === '') {
+            set_flash('error', 'Enter a valid domain, e.g. example.com.');
+        } else {
+            try {
+                $pdo->prepare('INSERT INTO blocked_domains (domain, note, created_by, created) VALUES (?, ?, ?, ?)
+                               ON DUPLICATE KEY UPDATE note = VALUES(note)')
+                    ->execute(array($domain, $note, $me['id'], time()));
+                log_security_event($pdo, 'admin_block_domain', $domain, $me['id']);
+                set_flash('success', 'Domain blocked: ' . $domain);
+            } catch (PDOException $e) {
+                set_flash('error', 'Could not save that domain.');
+            }
+        }
+    } elseif ($action === 'remove_blocked_domain') {
+        $did = (int) ($_POST['domain_id'] ?? 0);
+        $pdo->prepare('DELETE FROM blocked_domains WHERE id = ?')->execute(array($did));
+        log_security_event($pdo, 'admin_unblock_domain', 'id=' . $did, $me['id']);
+        set_flash('success', 'Domain removed from blocklist.');
     }
     redirect_to('admin');
 }
@@ -56,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $users   = $pdo->query('SELECT id, email, plan, is_admin, blocked, blocked_reason, created FROM users ORDER BY created DESC LIMIT 100')->fetchAll();
 $flagged = $pdo->query('SELECT code, long_url, user_id, blocked, clicks FROM urls WHERE blocked = 1 ORDER BY id DESC LIMIT 50')->fetchAll();
 $leads   = $pdo->query('SELECT ts, name, email, company, message FROM enterprise_leads ORDER BY id DESC LIMIT 25')->fetchAll();
+$domains_blocked = $pdo->query('SELECT id, domain, note, created FROM blocked_domains ORDER BY domain ASC LIMIT 200')->fetchAll();
 $reports = $pdo->query(
     "SELECT r.id, r.ts, r.code, r.reason, r.detail, r.email, r.status, u.long_url, u.blocked AS link_blocked
        FROM link_reports r LEFT JOIN urls u ON u.code = r.code
@@ -138,6 +160,42 @@ render_header('Admin');
     <?php endforeach; ?>
     </tbody>
   </table>
+  <?php endif; ?>
+</div>
+
+<div class="card glass">
+  <h2>Blocked domains</h2>
+  <p class="sub">Destinations on these domains are refused at creation and auto-disabled on visit. The bundled adult-content list applies on top of these.</p>
+  <form method="post" action="admin" class="input-row">
+    <?= csrf_field() ?>
+    <input type="hidden" name="action" value="add_blocked_domain">
+    <input type="text" name="domain" placeholder="example.com" required aria-label="Domain to block">
+    <input type="text" name="note" placeholder="Note (optional)" class="input-compact" aria-label="Note">
+    <button class="btn btn-ghost" type="submit">Block domain</button>
+  </form>
+  <?php if ($domains_blocked): ?>
+  <div style="overflow-x:auto">
+  <table class="links-table">
+    <thead><tr><th>Domain</th><th>Note</th><th>Added</th><th></th></tr></thead>
+    <tbody>
+    <?php foreach ($domains_blocked as $d): ?>
+      <tr>
+        <td class="short"><?= e($d['domain']) ?></td>
+        <td class="long"><?= e($d['note']) ?></td>
+        <td><?= e(gmdate('Y-m-d', (int) $d['created'])) ?></td>
+        <td>
+          <form method="post" action="admin" style="display:inline">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="remove_blocked_domain">
+            <input type="hidden" name="domain_id" value="<?= e($d['id']) ?>">
+            <button class="icon-btn" type="submit" title="Remove" aria-label="Remove <?= e($d['domain']) ?> from blocklist">✕</button>
+          </form>
+        </td>
+      </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  </div>
   <?php endif; ?>
 </div>
 

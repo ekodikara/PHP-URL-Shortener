@@ -123,4 +123,5 @@ require __DIR__ . '/auth.php';
 require __DIR__ . '/urls.php';
 require __DIR__ . '/tokens.php';
 require __DIR__ . '/security.php';
+require __DIR__ . '/content_filter.php';
 require __DIR__ . '/domains.php';

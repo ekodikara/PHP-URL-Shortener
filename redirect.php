@@ -76,16 +76,18 @@ if ($cap !== null) {
     }
 }
 
-// Re-check the destination against Safe Browsing (cached). A link whose target
-// turned malicious after creation is auto-disabled and never redirected.
-$threat = url_threat($pdo, $link['long_url']);
-if ($threat !== '') {
+// Re-check the destination (cached): malicious per Safe Browsing OR disallowed
+// by our acceptable-use policy. A link whose target crosses either line after
+// creation is auto-disabled and never redirected.
+$bad = url_is_disallowed($pdo, $link['long_url']);
+if ($bad !== '') {
     try {
         $pdo->prepare('UPDATE urls SET blocked = 1 WHERE id = ?')->execute(array($link['id']));
     } catch (PDOException $e) {
         error_log('auto-block failed: ' . $e->getMessage());
     }
-    log_security_event($pdo, 'auto_block_malicious', $threat . ' ' . $code, $link['owner_id']);
+    $event = strpos($bad, 'unsafe:') === 0 ? 'auto_block_malicious' : 'auto_block_disallowed';
+    log_security_event($pdo, $event, $bad . ' ' . $code, $link['owner_id']);
     http_response_code(410);
     die('This link has been disabled.');
 }

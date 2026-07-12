@@ -275,6 +275,22 @@ so paid users can drive it from AI assistants.
   logged) and in `redirect.php` (link auto-disabled + `auto_block_malicious`,
   410). Verdicts cached in the `url_reputation` table for `URL_SCAN_TTL` (12h);
   lookup failures are NOT cached.
+- **Content filter (adult/disallowed destinations)** — `inc/content_filter.php`.
+  Safe Browsing does NOT flag adult content, so this adds AUP layers,
+  cheapest-first: (1) a **bundled adult-domain blocklist** (`data/adult-domains.txt`,
+  a StevenBlack "porn-only" snapshot, ~77k domains; refresh via
+  `scripts/update-adult-blocklist.sh`); (2) an **admin-managed `blocked_domains`
+  table** (manage in `/admin` → "Blocked domains"); (3) **IPQualityScore URL
+  category** (reuses `IPQS_API_KEY`; only the adult flag hard-blocks; cached in
+  `url_reputation.category`/`cat_checked`, independent of the Safe Browsing
+  columns); (4) a **keyword backstop** (`url_keyword_flag()`, word-bounded) that
+  does NOT block — it logs `content_review_flagged` for admin review.
+  `url_is_disallowed($pdo, $url)` folds Safe Browsing + layers 1–3 into one
+  verdict (`''` = allow, else `unsafe:<threat>` or `adult:<source>`), enforced in
+  `create_short_url()` (reject + `adult_url_blocked`) and `redirect.php`
+  (auto-disable + `auto_block_disallowed`, 410). `CONTENT_FILTER_ON=0` disables
+  the adult layers only (Safe Browsing still runs). Schema in migration
+  `004_content_filtering.sql`.
 - **Public abuse reports** — `report.php` (clean `/report`, linked from the
   footer and the interstitial): honeypot + rate-limited (5/hr/IP), accepts a
   code or full short URL, writes to `link_reports`. `AUTO_BLOCK_REPORTS` (3)

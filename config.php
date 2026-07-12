@@ -121,6 +121,13 @@ define('URL_SCAN_TTL', 43200);
 define('ABUSE_EMAIL', getenv('ABUSE_EMAIL') ?: 'abuse@' . parse_url(BASE_HREF, PHP_URL_HOST));
 // Open reports on one link before it is automatically disabled pending review.
 define('AUTO_BLOCK_REPORTS', 3);
+// Content filtering (adult/disallowed destinations), layered on top of Safe
+// Browsing: a bundled adult-domain blocklist, an admin-managed blocklist, and
+// (when IPQS_API_KEY is set) IPQualityScore URL-category lookups. Set the env to
+// '0' to disable these adult layers; Safe Browsing still applies either way.
+define('CONTENT_FILTER_ON', getenv('CONTENT_FILTER_ON') !== '0');
+// Bundled adult-domain blocklist (hosts-file or bare-domain format, one per line).
+define('ADULT_BLOCKLIST', getenv('ADULT_BLOCKLIST') ?: __DIR__ . '/data/adult-domains.txt');
 
 // --- Enterprise SSO (env-gated; active only when configured) ---------------
 // OIDC: set issuer (for discovery) OR the explicit endpoints, plus client creds.

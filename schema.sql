@@ -118,12 +118,27 @@ CREATE TABLE IF NOT EXISTS `access_log` (
   KEY `code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Cached Google Safe Browsing verdicts for destination URLs.
+-- Cached destination-URL verdicts. `threat`/`checked` are Google Safe Browsing;
+-- `category`/`cat_checked` are the IPQualityScore URL category (content filter).
+-- The two verdicts share the row (same url_hash) but refresh independently.
 CREATE TABLE IF NOT EXISTS `url_reputation` (
-  `url_hash` CHAR(64) NOT NULL,                 -- sha256 hex of the destination URL
-  `threat`   VARCHAR(40) NOT NULL DEFAULT '',   -- '' = clean, else e.g. SOCIAL_ENGINEERING
-  `checked`  INT UNSIGNED NOT NULL,
+  `url_hash`    CHAR(64) NOT NULL,                 -- sha256 hex of the destination URL
+  `threat`      VARCHAR(40) NOT NULL DEFAULT '',   -- Safe Browsing: '' = clean, else e.g. SOCIAL_ENGINEERING
+  `category`    VARCHAR(40) NOT NULL DEFAULT '',   -- IPQS category: '' = unknown, 'adult' = disallowed, ...
+  `checked`     INT UNSIGNED NOT NULL DEFAULT 0,   -- when `threat` was last refreshed
+  `cat_checked` INT UNSIGNED NOT NULL DEFAULT 0,   -- when `category` was last refreshed
   PRIMARY KEY (`url_hash`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Admin-managed domain blocklist (applied on top of the bundled adult list).
+CREATE TABLE IF NOT EXISTS `blocked_domains` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `domain`     VARCHAR(253) NOT NULL,              -- registrable domain or exact host
+  `note`       VARCHAR(190) NOT NULL DEFAULT '',
+  `created_by` INT UNSIGNED NULL DEFAULT NULL,
+  `created`    INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `domain` (`domain`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Abuse reports filed against short links via the public /report form.

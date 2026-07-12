@@ -68,13 +68,25 @@ function create_short_url(PDO $pdo, array $user, $long_url, $slug = '', $domain_
         return array(null, 'That URL is too long.');
     }
 
-    // Refuse destinations Google Safe Browsing knows to be malicious.
-    $threat = url_threat($pdo, $long_url);
-    if ($threat !== '') {
-        log_security_event($pdo, 'malicious_url_blocked',
-            $threat . ' ' . mb_substr($long_url, 0, 200), $user['id']);
-        return array(null, 'That destination is flagged as unsafe ('
-            . strtolower(str_replace('_', ' ', $threat)) . ') and can\'t be shortened.');
+    // Refuse destinations that are malicious (Safe Browsing) or disallowed by
+    // our acceptable-use policy (adult-content blocklist + IPQS category).
+    $bad = url_is_disallowed($pdo, $long_url);
+    if ($bad !== '') {
+        list($kind, $detail) = array_pad(explode(':', $bad, 2), 2, '');
+        if ($kind === 'unsafe') {
+            log_security_event($pdo, 'malicious_url_blocked',
+                $detail . ' ' . mb_substr($long_url, 0, 180), $user['id']);
+            return array(null, 'That destination is flagged as unsafe ('
+                . strtolower(str_replace('_', ' ', $detail)) . ') and can\'t be shortened.');
+        }
+        log_security_event($pdo, 'adult_url_blocked',
+            $detail . ' ' . mb_substr($long_url, 0, 180), $user['id']);
+        return array(null, 'That destination isn\'t allowed under our acceptable use policy.');
+    }
+    // Crude keyword backstop: don't reject, but flag it for admin review.
+    if (url_keyword_flag($long_url)) {
+        log_security_event($pdo, 'content_review_flagged',
+            mb_substr($long_url, 0, 200), $user['id']);
     }
 
     // Link quota — monthly for the trial, lifetime total for paid plans.
