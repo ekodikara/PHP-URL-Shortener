@@ -570,52 +570,39 @@ input.input-compact { width: 160px; padding: 6px 8px; }
 .limit-near strong { color: var(--ink); }
 .result-inner.limit-hit { display: block; }
 
-/* "Full details" text button on each pricing card. */
-.plan-details-link {
-  align-self: flex-start; margin: -10px 0 16px; padding: 0;
-  background: none; border: none; font: inherit; font-size: 0.82rem;
-  color: var(--accent); cursor: pointer; text-decoration: underline;
-  text-underline-offset: 2px;
+/* Plan comparison — inline expandable table (replaces the old popup). */
+.plans-compare {
+  margin: 22px auto 0; max-width: 920px; overflow: hidden;
+  border: 1px solid var(--rule); border-radius: var(--radius); background: var(--paper);
 }
-.plan-details-link:hover { filter: brightness(0.92); }
+.plans-compare > summary {
+  list-style: none; cursor: pointer; padding: 15px 20px; font-weight: 700; color: var(--ink);
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.plans-compare > summary::-webkit-details-marker { display: none; }
+.plans-compare > summary::after { content: "▾"; color: var(--ink-dim); transition: transform 0.2s; }
+.plans-compare[open] > summary { border-bottom: 1px solid var(--rule); }
+.plans-compare[open] > summary::after { transform: rotate(180deg); }
+.plans-compare > summary:hover { color: var(--accent); }
 
-/* Plan-comparison modal dialog. */
-.plan-dialog {
-  padding: 0; border: 1px solid var(--rule-hi); border-radius: var(--radius);
-  width: min(720px, calc(100% - 32px)); max-height: 85vh; overflow: hidden;
-  background: var(--paper); color: var(--ink);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-  display: flex; flex-direction: column;   /* header fixed, body scrolls */
+.table-scroll { overflow-x: auto; }
+.compare-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 560px; }
+.compare-table th, .compare-table td { padding: 11px 14px; text-align: center; border-top: 1px solid var(--rule); }
+.compare-table thead th { font-family: var(--font-display); font-weight: 700; font-size: 1rem; border-top: none; color: var(--ink); }
+.compare-table tbody th[scope="row"] { text-align: left; font-weight: 600; color: var(--ink-dim); white-space: nowrap; }
+.compare-table td { color: var(--ink); }
+.compare-table .cmp-corner {
+  text-align: left; color: var(--ink-faint); font-family: inherit; font-weight: 700;
+  font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em;
 }
-.plan-dialog::backdrop { background: rgba(10, 12, 16, 0.55); }
-.pd-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 18px 22px; border-bottom: 1px solid var(--rule);
-  background: var(--paper); flex: none;
+.compare-table .is-current { background: var(--paper-2); }
+.compare-table thead .is-current { color: var(--accent); }
+.cmp-you {
+  display: inline-block; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--on-accent); background: var(--accent-btn); border-radius: 4px; padding: 1px 5px; vertical-align: middle;
 }
-.pd-head h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.25rem; margin: 0; }
-.pd-close {
-  width: 34px; height: 34px; flex: none; border-radius: 8px;
-  border: 1px solid var(--rule-hi); background: transparent;
-  color: var(--ink-dim); cursor: pointer; font-size: 1rem; line-height: 1;
-}
-.pd-close:hover { color: var(--ink); border-color: var(--ink); }
-.pd-body { padding: 6px 22px 22px; overflow-y: auto; flex: 1; min-height: 0; }
-.pd-plan { padding: 18px 0; border-top: 1px solid var(--rule); }
-.pd-plan:first-child { border-top: none; }
-.pd-plan:focus { outline: none; }
-.pd-plan h3 {
-  font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 0 0 2px;
-}
-.pd-blurb { color: var(--ink-faint); font-size: 0.85rem; margin: 0 0 12px; }
-.pd-rows { margin: 0; }
-.pd-row {
-  display: flex; justify-content: space-between; gap: 16px;
-  padding: 8px 0; border-top: 1px dashed var(--rule); font-size: 0.9rem;
-}
-.pd-row:first-child { border-top: none; }
-.pd-row dt { color: var(--ink-dim); margin: 0; }
-.pd-row dd { color: var(--ink); margin: 0; font-weight: 600; text-align: right; }
+.cmp-yes { color: var(--mark); font-weight: 700; }
+.cmp-no { color: var(--ink-faint); }
 
 /* --- Link analytics (stats.php) ------------------------------------------ */
 .range-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 20px; }

@@ -91,34 +91,6 @@
     });
   }
 
-  // Plan-details modal: openers carry data-plan-dialog="<planKey>" ("" = top).
-  var planDialog = document.getElementById('plan-dialog');
-  if (planDialog) {
-    document.addEventListener('click', function (ev) {
-      var opener = ev.target.closest('[data-plan-dialog]');
-      if (opener) {
-        ev.preventDefault();
-        if (typeof planDialog.showModal === 'function') planDialog.showModal();
-        else planDialog.setAttribute('open', '');
-        var key = opener.getAttribute('data-plan-dialog');
-        var target = key ? document.getElementById('pd-' + key) : null;
-        if (target) {
-          target.scrollIntoView({ block: 'start' });
-          target.focus({ preventScroll: true });
-        } else {
-          planDialog.querySelector('.pd-body').scrollTop = 0;
-        }
-        return;
-      }
-      if (ev.target.closest('[data-plan-dialog-close]')) {
-        planDialog.close();
-        return;
-      }
-      // Click on the backdrop (the dialog element itself) closes it.
-      if (ev.target === planDialog) planDialog.close();
-    });
-  }
-
   // Live activity feed on the per-link stats page (polled; no websockets).
   var liveFeed = document.getElementById('live-feed');
   if (liveFeed) {

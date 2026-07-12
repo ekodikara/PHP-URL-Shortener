@@ -107,9 +107,6 @@ function render_plans($current = null)
       <ul>
         <?php foreach ($features[$key] as $feat): ?><li><?= e($feat) ?></li><?php endforeach; ?>
       </ul>
-      <button type="button" class="plan-details-link" data-plan-dialog="<?= e($key) ?>"
-              aria-haspopup="dialog" aria-controls="plan-dialog"
-              aria-label="Full details for the <?= e($p['name']) ?> plan">Full details</button>
       <?php if ($is_contact): ?>
         <a class="btn <?= $is_current ? 'btn-ghost' : 'btn-solid' ?> btn-block" href="enterprise"><?= $is_current ? 'Your plan · contact us' : 'Contact sales' ?></a>
       <?php elseif ((int) $p['price'] === 0): /* perpetual free */ ?>
@@ -138,8 +135,8 @@ function render_plans($current = null)
 
 /**
  * Full, truthful spec for one plan as label => value rows, derived straight
- * from its $GLOBALS['PLANS'] config (so the dialog can never drift from the
- * quota engine). Used by render_plans_dialog().
+ * from its $GLOBALS['PLANS'] config (so the comparison can never drift from the
+ * quota engine). Used by render_plans_comparison().
  */
 function plan_detail_rows($key, array $p)
 {
@@ -176,32 +173,54 @@ function plan_detail_rows($key, array $p)
 }
 
 /**
- * A single modal <dialog> listing the full spec of every plan. Rendered once
- * on any page that shows the pricing cards; opened by the per-card
- * "Full details" buttons (data-plan-dialog) via app.js.
+ * Full plan comparison as a side-by-side TABLE (features as rows, plans as
+ * columns) inside a collapsed <details> disclosure. Inline — no popup, so it
+ * never scrolls the page — and it highlights the viewer's current plan column.
+ * Values come from plan_detail_rows() so the table can't drift from config.
  */
-function render_plans_dialog()
+function render_plans_comparison($current = null)
 {
+    $labels = null;
+    $cols = array();
+    foreach ($GLOBALS['PLANS'] as $key => $p) {
+        $rows = plan_detail_rows($key, $p);
+        if ($labels === null) {
+            $labels = array_keys($rows);
+        }
+        $cols[$key] = array('name' => $p['name'], 'rows' => $rows);
+    }
+    // Render Included/Not-included as ✓/— for scannability; other values verbatim.
+    $cell = function ($v) {
+        if ($v === 'Included')     { return '<span class="cmp-yes" title="Included" aria-label="Included">✓</span>'; }
+        if ($v === 'Not included') { return '<span class="cmp-no" title="Not included" aria-label="Not included">—</span>'; }
+        return e($v);
+    };
     ?>
-    <dialog id="plan-dialog" class="plan-dialog" aria-labelledby="plan-dialog-title">
-      <div class="pd-head">
-        <h2 id="plan-dialog-title">Compare plans in detail</h2>
-        <button type="button" class="pd-close" data-plan-dialog-close aria-label="Close dialog">✕</button>
-      </div>
-      <div class="pd-body">
-        <?php foreach ($GLOBALS['PLANS'] as $key => $p): ?>
-        <section class="pd-plan" id="pd-<?= e($key) ?>" tabindex="-1">
-          <h3><?= e($p['name']) ?></h3>
-          <?php if (!empty($p['blurb'])): ?><p class="pd-blurb"><?= e($p['blurb']) ?></p><?php endif; ?>
-          <dl class="pd-rows">
-            <?php foreach (plan_detail_rows($key, $p) as $label => $val): ?>
-              <div class="pd-row"><dt><?= e($label) ?></dt><dd><?= e($val) ?></dd></div>
+    <details class="plans-compare">
+      <summary><span>Compare all plans in detail</span></summary>
+      <div class="table-scroll">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th scope="col" class="cmp-corner">Feature</th>
+              <?php foreach ($cols as $key => $c): ?>
+                <th scope="col"<?= $current === $key ? ' class="is-current"' : '' ?>><?= e($c['name']) ?><?php if ($current === $key): ?> <span class="cmp-you">You</span><?php endif; ?></th>
+              <?php endforeach; ?>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach ($labels as $label): ?>
+            <tr>
+              <th scope="row"><?= e($label) ?></th>
+              <?php foreach ($cols as $key => $c): ?>
+                <td<?= $current === $key ? ' class="is-current"' : '' ?>><?= $cell($c['rows'][$label]) ?></td>
+              <?php endforeach; ?>
+            </tr>
             <?php endforeach; ?>
-          </dl>
-        </section>
-        <?php endforeach; ?>
+          </tbody>
+        </table>
       </div>
-    </dialog>
+    </details>
     <?php
 }
 
