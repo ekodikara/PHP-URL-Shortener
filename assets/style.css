@@ -572,7 +572,7 @@ input.input-compact { width: 160px; padding: 6px 8px; }
 
 /* Plan comparison — inline expandable table (replaces the old popup). */
 .plans-compare {
-  margin: 22px auto 0; max-width: 920px; overflow: hidden;
+  margin: 22px 0 0; overflow: hidden;   /* full width — matches the .plans card row */
   border: 1px solid var(--rule); border-radius: var(--radius); background: var(--paper);
 }
 .plans-compare > summary {
