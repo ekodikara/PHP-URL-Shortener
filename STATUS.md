@@ -1,49 +1,78 @@
 # Snip — Session Status / Handoff
 
-_Last updated: 2026-06-09. Read `CLAUDE.md` first for architecture & conventions._
+_Last updated: 2026-07-12. Read `CLAUDE.md` first for architecture & conventions._
 
 ## TL;DR
-The full "Snip" app (accounts, plans, custom names, QR, click stats, glassmorphism
-UI) is **built and verified end-to-end** in Docker. Everything works. The work is
-**not yet committed** to git.
+Snip is a **built, verified, launch-prep** URL-shortener SaaS. This session added
+content filtering, click analytics, registration hardening, a perpetual-free plan,
+billing transparency, and go-live docs. All work lives on branch
+**`worktree-content-filtering`** (pushed to both remotes; **not merged to master**,
+**no PR** — `gh` CLI isn't installed here). Business is **Australian** (owner Moonxt),
+prod domain **jmpz.cc**. Not yet live — go-live is gated on a Stripe account + a few
+config/legal items, not on code.
 
 ## Where we left off
-- Branch: `master`. **18 uncommitted changes** in the working tree (5 modified,
-  13 new). Nothing has been committed yet.
-- Docker stack was left **running** (`web` + `db`) at http://localhost:8088.
-  Tomorrow: `docker compose up -d --build` if it's down; `docker compose ps` to check.
-- Live DB volume has a test account: `alice@example.com` / `supersecret1` (Premium,
-  ~11 sample links). Lost only if you `docker compose down -v`.
+- **Branch:** `worktree-content-filtering`, working tree **clean**, everything
+  committed + pushed to `origin` (ekodikara/PHP-URL-Shortener) **and** `u99x`
+  (ekodikara/u99x). Latest commit `9c6e2f7`.
+- **Running locally:** Docker project `snip` at http://localhost:8088. If down:
+  `docker compose -p snip up -d --build` from this worktree, then
+  `docker compose -p snip exec -T web php scripts/migrate.php`.
+- **Test account:** `alice@example.com` / `supersecret1` (Premium, email-verified,
+  sample links incl. `/launch` with seeded analytics). Gone on `down -v`.
+- A **Stop hook** (in `~/.claude/settings.json`) plays an alert sound when a task
+  finishes. Session runs in **ultracode** mode.
 
-## Done & verified ✅
-- Security hardening of the original shortener (PDO prepared statements, CSRF,
-  http(s)-only redirects, removed `mysql_*` + `magic_quotes`, env-based creds).
-- Rewrite into multi-page app: landing, register, login, logout, dashboard, upgrade.
-- Auth (bcrypt, session regeneration, hardened cookies).
-- Quota engine: free 10/mo + 1000 visits/link, pro 100/mo unlimited visits,
-  premium unlimited + 100 custom names. Verified the free cutoff fires at exactly 10.
-- Custom slugs gated to Premium; reserved words + duplicates rejected.
-- Dashboard: usage meter, AJAX shorten, per-row QR, copy, click counts, delete.
-- Docker (PHP 8.3/Apache + MySQL 8), `.htaccess` routing + `/inc` & `*.sql` blocked.
-- Verified via curl AND browser screenshots (landing + dashboard render correctly).
-- Documentation: `CLAUDE.md` (architecture) + memory entry written.
+## Shipped this session ✅ (all on the branch)
+- **Content filtering** (`inc/content_filter.php`) — bundled adult-domain blocklist
+  (`data/adult-domains.txt`, ~77k) + admin `blocked_domains` + IPQS category, on top
+  of Safe Browsing. Enforced at create + redirect. Security-audited & fixed
+  (trailing-dot bypass, admin subdomain-walk, 77k-list DoS → APCu cache).
+- **Free plan → perpetual** (was a 30-day trial): 10 links/month, **unlimited
+  redirects (no more 410 link-breaking)**, no card. Trial cap history: 50→10→removed.
+- **Plan UI**: period-aware limit messaging + a full-width inline **comparison table**
+  (replaced a popup).
+- **Analytics** (`stats.php`, `/stats?code=…`): clicks-over-time, unique visitors
+  (privacy hash), referrers, browser/OS/device, **country geo w/ flags** (DB-IP mmdb),
+  **live activity feed** (polled), **human/bot split**, CSV export. MCP `get_stats` enriched.
+- **Registration hardening**: disposable-email block (`data/disposable-email-domains.txt`)
+  + enforced email verification before creating links.
+- **Billing**: fixed a real **plan-change double-billing bug** (existing subscribers now
+  route to the Portal); added a dashboard **billing-status block**, `/refund` policy,
+  at-checkout auto-renewal disclosure, statement-descriptor display, webhook now stores
+  `current_period_end`/`cancel_at_period_end`.
+- **Docs (repo root):** `DEPLOY.md` (runbook, corrected for AU + migrate step),
+  `PAYMENTS.md` (Stripe-AU vs PayPal/MoR), `BUSINESS-SETUP.md` (sole-trader → Stripe),
+  this `STATUS.md`. Tests: 33/485 green (`bash scripts/test.sh`).
 
-## Next up (pick any) ⏭️
-1. **Commit the work** — branch off master, commit the rewrite + docs, optionally open a PR.
-   (User's repo flow: branch first, commit only when asked.)
-2. **Real billing** — replace the demo plan-switch in `upgrade.php` with Stripe
-   Checkout + a verified webhook before mutating `users.plan`.
-3. **Vendor qrcodejs locally** — currently loaded from cdnjs (needs internet); make offline-safe.
-4. **Auth hardening** — password reset, email verification, login rate limiting.
-5. **Cleanup** — remove unused legacy files (`README`, `index.html`, `shortenedurls.sql`).
-6. **Production** — TLS/HTTPS, set `SITE_HOST`, real secrets (not the demo passwords in compose).
+## Next up — go-live path ⏭️ (details in DEPLOY.md / PAYMENTS.md / BUSINESS-SETUP.md)
+**Business (longest lead — start first):**
+1. Register a **sole trader ABN** (free) → optionally the "Moonxt" business name
+   (~A$47) — enough for Stripe. See `BUSINESS-SETUP.md`.
+2. Activate **Stripe AU** (self-serve: ABN + AU bank + KYC).
+
+**Must-fix before charging (mostly config, not code):**
+3. **Email delivery** — SMTP relay + SPF/DKIM/DMARC for jmpz.cc (verification is
+   enforced, so broken mail dead-ends signups). **Hard blocker.**
+4. Set `SAFE_BROWSING_API_KEY`, real **reCAPTCHA** keys (blank fails closed), Stripe
+   **live keys + webhook**, run `scripts/update-geoip.sh` before build.
+5. **Stripe Dashboard (no code):** statement descriptor `SNIP.APP`, email receipts,
+   renewal-reminder + dunning emails, Radar defaults, Portal cancel/plan-switch on.
+6. One **restore drill** (`restore.sh`).
+
+**Deferred / nice-to-have:**
+- Merge `worktree-content-filtering` → `master` and open a PR (needs `gh` or the web).
+- Legal: Privacy Policy (Australian Privacy Act), have a solicitor sight `/refund` +
+  checkout wording. GST only at A$75k turnover (then switch pricing to AUD + GST-incl).
+- Timestamped ToS-acceptance checkbox at checkout (stronger chargeback evidence).
+- Sentry error monitoring; vendor qrcodejs locally; conversion attribution (Dub-style).
 
 ## Useful commands
 ```bash
-docker compose up -d --build     # start
-docker compose ps                # status
-docker compose logs -f web       # tail web logs
-docker compose down              # stop (keeps DB)
-docker compose down -v           # stop + wipe DB (forces schema.sql reload)
-php -l <file>                    # lint a PHP file
+docker compose -p snip up -d --build                                   # start (this worktree)
+docker compose -p snip exec -T web php scripts/migrate.php             # apply migrations (every deploy)
+docker compose -p snip ps                                              # status
+bash scripts/test.sh                                                   # run PHPUnit (Docker)
+php -l <file>                                                          # lint
+git -C . log --oneline -15                                             # this session's commits
 ```
