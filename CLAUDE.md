@@ -128,7 +128,7 @@ Defined in `config.php` as `$GLOBALS['PLANS']`. Enforced centrally in
 
 | Plan    | Price | url_limit            | monthly_visit_cap    | custom_slugs | is_trial |
 |---------|-------|----------------------|----------------------|--------------|----------|
-| free    | $0    | 20 (total/lifetime)  | 50 / month           | 0            | yes      |
+| free    | $0    | 20 (total/lifetime)  | 10 / month           | 0            | yes      |
 | pro     | $7    | 50 (per month)       | unlimited (null)     | 0            | no       |
 | premium | $12   | unlimited (null)     | unlimited (null)     | 100          | no       |
 
@@ -178,7 +178,7 @@ Defined in `config.php` as `$GLOBALS['PLANS']`. Enforced centrally in
 - Monthly count = rows in `urls` for the user with `created >= month_start_ts()`.
 - Custom slug count = rows with `is_custom = 1`. Validated by `is_valid_slug()`
   (3–40 of `[A-Za-z0-9_-]`, not in `$GLOBALS['RESERVED_SLUGS']`, unique).
-- Visit caps: see `monthly_visit_cap` note above (the free trial caps at 50/month).
+- Visit caps: see `monthly_visit_cap` note above (the free trial caps at 10/month).
 
 ## Conventions / patterns to follow
 

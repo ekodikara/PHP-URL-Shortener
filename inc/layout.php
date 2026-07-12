@@ -74,7 +74,7 @@ function render_billing_toggle()
 function render_plans($current = null)
 {
     $features = array(
-        'free'       => array(TRIAL_DAYS . '-day free trial', '20 links total', '50 visits / month', 'QR codes + click stats'),
+        'free'       => array(TRIAL_DAYS . '-day free trial', '20 links total', '10 visits / month', 'QR codes + click stats'),
         'pro'        => array('50 links / month', 'Unlimited visits', 'QR codes + click stats', 'Priority redirects'),
         'premium'    => array('Unlimited links', 'Unlimited visits', '100 custom link names', 'Everything in Pro'),
         'enterprise' => array('Everything in Premium', 'Custom branded domains', 'SSO (SAML & OIDC)', 'Unlimited custom names'),
