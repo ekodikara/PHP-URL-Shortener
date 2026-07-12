@@ -37,6 +37,14 @@ if ($session_id !== '' && stripe_ready()) {
                 $session->customer,
                 $sub_id
             );
+            // Capture period end + cancel flag now so the dashboard shows the
+            // renewal date immediately (the webhook also syncs this).
+            $sub_obj = is_object($session->subscription) ? $session->subscription : null;
+            stripe_store_period(
+                $pdo, $session->customer, $sub_id,
+                ($sub_obj && isset($sub_obj->current_period_end)) ? $sub_obj->current_period_end : null,
+                ($sub_obj && !empty($sub_obj->cancel_at_period_end))
+            );
             $activated = true;
             $user = current_user(); // refresh cached row not needed; re-fetch fresh
         }

@@ -106,6 +106,44 @@ render_header('Dashboard');
 </section>
 <?php endif; ?>
 
+<?php if (plan_is_paid($user)):
+    $cpe = !empty($user['current_period_end']) ? (int) $user['current_period_end'] : 0;
+    $cancelling = !empty($user['cancel_at_period_end']);
+    $priceLabel = ((int) $plan['price'] > 0)
+        ? '$' . money(plan_amount($user['plan'], $user['billing_interval'] === 'year' ? 'year' : 'month'))
+          . '/' . ($user['billing_interval'] === 'year' ? 'year' : 'month')
+        : '';
+?>
+<div class="card glass">
+  <h2>Billing</h2>
+  <p class="sub" style="margin:0 0 10px">You're on the <strong><?= e($plan['name']) ?></strong> plan<?= $priceLabel ? ' — ' . e($priceLabel) : '' ?>.</p>
+  <?php if ($user['plan'] === 'enterprise' && empty($user['stripe_customer_id'])): ?>
+    <p style="margin:0">Your Enterprise plan is billed by arrangement. <a href="enterprise">Contact us</a> for any billing change.</p>
+  <?php else: ?>
+    <p style="margin:0 0 4px">
+      <?php if ($cancelling && $cpe): ?>
+        <strong>Cancelling.</strong> Access until <strong><?= e(gmdate('j M Y', $cpe)) ?></strong> — you won't be charged again.
+      <?php elseif ($cpe): ?>
+        <strong>Active.</strong> Renews on <strong><?= e(gmdate('j M Y', $cpe)) ?></strong><?= $priceLabel ? ' at ' . e($priceLabel) : '' ?>.
+      <?php else: ?>
+        <strong>Active.</strong> See your renewal date, invoices and receipts in the billing portal.
+      <?php endif; ?>
+    </p>
+    <?php if (!empty($user['stripe_customer_id'])): ?>
+    <form method="post" action="billing-portal" style="margin:12px 0 0">
+      <?= csrf_field() ?>
+      <button class="btn btn-ghost" type="submit">Manage billing &amp; invoices</button>
+    </form>
+    <?php endif; ?>
+    <p class="hint" style="margin-top:14px">
+      Cancelling stops future renewals — you keep access until your paid period ends; the current period isn't refunded for change of mind (see the <a href="refund">Refund &amp; Cancellation Policy</a>).
+      Charges appear on your statement as <code><?= e(STATEMENT_DESCRIPTOR) ?></code>.
+      See a charge that looks wrong? <a href="mailto:<?= e(ABUSE_EMAIL) ?>">Email us</a> before disputing — we usually sort it out within one business day.
+    </p>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
+
 <div class="card glass">
   <h2>Create a short link</h2>
   <?php if (plan_is_paid($user)): ?>

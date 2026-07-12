@@ -80,6 +80,11 @@ define('STRIPE_API_VERSION', '2026-05-27.dahlia');
 
 // Yearly billing discount (paid annually). 0.12 = 12% off 12 months.
 define('YEARLY_DISCOUNT', 0.12);
+// The card-statement descriptor customers will see for charges. MUST match what
+// you set in the Stripe Dashboard (account + product) — showing it in-app
+// pre-empts "I don't recognise this charge" chargebacks. Stripe rules: 5-22
+// chars, >=5 letters, no < > ' " .
+define('STATEMENT_DESCRIPTOR', getenv('STATEMENT_DESCRIPTOR') ?: 'SNIP.APP');
 
 // --- Outbound mail (verification + password reset) -------------------------
 // MAIL_FROM empty = dev mode: emails are written to cache/mail.log instead of
@@ -233,6 +238,6 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
     'enterprise', 'domains', 'sso', 'tls-check', 'health',
-    'terms', 'report', 'abuse', 'stats', 'analytics',
+    'terms', 'report', 'abuse', 'stats', 'analytics', 'refund',
     'forgot', 'reset', 'verify',
 );

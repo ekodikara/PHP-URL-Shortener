@@ -23,7 +23,10 @@ render_header('Plans');
   </div>
   <?php render_plans_comparison($user['plan']); ?>
   <p class="hint center">
-    Secure payments by Stripe. Cancel anytime — you keep access until the period you paid for ends.
+    Paid plans <strong>renew automatically</strong> at the price shown, until you cancel. Secure payments by
+    Stripe. Cancel anytime from your dashboard — you keep access until the period you've paid for ends; the
+    current period isn't refunded for change of mind. See our
+    <a href="refund">Refund &amp; Cancellation Policy</a> and <a href="terms">Terms</a>.
   </p>
 </section>
 <?php render_footer(); ?>

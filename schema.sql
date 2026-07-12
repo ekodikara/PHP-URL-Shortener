@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   `billing_interval`       ENUM('month','year') NULL DEFAULT NULL,
   `stripe_customer_id`     VARCHAR(255) NULL DEFAULT NULL,
   `stripe_subscription_id` VARCHAR(255) NULL DEFAULT NULL,
+  `current_period_end`     INT UNSIGNED NULL DEFAULT NULL,   -- unix ts the paid period ends (from Stripe)
+  `cancel_at_period_end`   TINYINT(1) NOT NULL DEFAULT 0,    -- 1 = set to cancel; won't renew
   `month_visits`           INT UNSIGNED NOT NULL DEFAULT 0,
   `visit_month`            CHAR(7) NULL DEFAULT NULL,
   `is_admin`               TINYINT(1) NOT NULL DEFAULT 0,

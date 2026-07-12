@@ -14,7 +14,7 @@ function current_user()
     if (empty($_SESSION['uid'])) {
         return $cache = null;
     }
-    $stmt = $pdo->prepare('SELECT id, email, plan, billing_interval, stripe_customer_id, stripe_subscription_id, is_admin, blocked, blocked_reason, email_verified, created FROM users WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT id, email, plan, billing_interval, stripe_customer_id, stripe_subscription_id, current_period_end, cancel_at_period_end, is_admin, blocked, blocked_reason, email_verified, created FROM users WHERE id = ?');
     $stmt->execute(array($_SESSION['uid']));
     $row = $stmt->fetch();
     return $cache = ($row ?: null);

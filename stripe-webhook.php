@@ -69,8 +69,19 @@ try {
             downgrade_by_customer($pdo, $sub->customer, $sub->id);
             break;
 
-        // customer.subscription.updated (e.g. cancel_at_period_end = true) keeps
-        // the plan active until period end, so no action is needed there.
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+            // Sync the period end + cancel flag so the dashboard can show
+            // "Renews on / Access until X" and reflect a Portal cancellation.
+            // Plan activation stays with checkout.session.completed; this only
+            // touches the two period fields on the matching (customer, sub) row.
+            $sub = $event->data->object;
+            stripe_store_period(
+                $pdo, $sub->customer, $sub->id,
+                isset($sub->current_period_end) ? $sub->current_period_end : null,
+                !empty($sub->cancel_at_period_end)
+            );
+            break;
     }
 } catch (\Throwable $e) {
     // Handling failed — undo the idempotency marker and 500 so Stripe retries.

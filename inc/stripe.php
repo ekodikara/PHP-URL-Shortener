@@ -76,6 +76,28 @@ function activate_subscription(PDO $pdo, $user_id, $plan, $interval, $customer_i
 }
 
 /**
+ * Persist a subscription's current-period-end + cancel-at-period-end onto the
+ * matching user (by customer + subscription id). Fed by the subscription
+ * webhook events (and post-checkout) so the dashboard can show "Renews on /
+ * Access until X" from a local read, with no live Stripe API call per page.
+ */
+function stripe_store_period(PDO $pdo, $customer_id, $subscription_id, $current_period_end, $cancel_at_period_end)
+{
+    if (!$customer_id || !$subscription_id) {
+        return;
+    }
+    $stmt = $pdo->prepare(
+        'UPDATE users SET current_period_end = ?, cancel_at_period_end = ?
+          WHERE stripe_customer_id = ? AND stripe_subscription_id = ?'
+    );
+    $stmt->execute(array(
+        $current_period_end !== null ? (int) $current_period_end : null,
+        $cancel_at_period_end ? 1 : 0,
+        $customer_id, $subscription_id,
+    ));
+}
+
+/**
  * Downgrade a user (looked up by Stripe customer id) back to the locked free
  * state. When $subscription_id is given, only downgrade if it matches the
  * user's CURRENT subscription — so a late/duplicate delete for a superseded
@@ -85,14 +107,16 @@ function downgrade_by_customer(PDO $pdo, $customer_id, $subscription_id = null)
 {
     if ($subscription_id !== null) {
         $stmt = $pdo->prepare(
-            'UPDATE users SET plan = "free", billing_interval = NULL, stripe_subscription_id = NULL
+            'UPDATE users SET plan = "free", billing_interval = NULL, stripe_subscription_id = NULL,
+                    current_period_end = NULL, cancel_at_period_end = 0
               WHERE stripe_customer_id = ? AND stripe_subscription_id = ?'
         );
         $stmt->execute(array($customer_id, $subscription_id));
         return; // if it wasn't the current sub, we intentionally do nothing
     }
     $stmt = $pdo->prepare(
-        'UPDATE users SET plan = "free", billing_interval = NULL, stripe_subscription_id = NULL WHERE stripe_customer_id = ?'
+        'UPDATE users SET plan = "free", billing_interval = NULL, stripe_subscription_id = NULL,
+                current_period_end = NULL, cancel_at_period_end = 0 WHERE stripe_customer_id = ?'
     );
     $stmt->execute(array($customer_id));
 }
