@@ -107,6 +107,9 @@ function render_plans($current = null)
       <ul>
         <?php foreach ($features[$key] as $feat): ?><li><?= e($feat) ?></li><?php endforeach; ?>
       </ul>
+      <button type="button" class="plan-details-link" data-plan-dialog="<?= e($key) ?>"
+              aria-haspopup="dialog" aria-controls="plan-dialog"
+              aria-label="Full details for the <?= e($p['name']) ?> plan">Full details</button>
       <?php if ($is_contact): ?>
         <a class="btn <?= $is_current ? 'btn-ghost' : 'btn-solid' ?> btn-block" href="enterprise"><?= $is_current ? 'Your plan · contact us' : 'Contact sales' ?></a>
       <?php elseif ($is_current && $is_trial): ?>
@@ -131,6 +134,79 @@ function render_plans($current = null)
       <?php endif; ?>
     </div>
     <?php endforeach;
+}
+
+/**
+ * Full, truthful spec for one plan as label => value rows, derived straight
+ * from its $GLOBALS['PLANS'] config (so the dialog can never drift from the
+ * quota engine). Used by render_plans_dialog().
+ */
+function plan_detail_rows($key, array $p)
+{
+    $is_trial   = !empty($p['is_trial']);
+    $is_contact = !empty($p['contact']);
+    $is_paid    = !$is_trial;                     // pro / premium / enterprise
+    $num = function ($v) { return number_format((int) $v); };
+
+    if ($is_contact) {
+        $price = 'Custom — contact sales';
+    } elseif ($is_trial) {
+        $price = '$0 for ' . TRIAL_DAYS . ' days';
+    } else {
+        $price = '$' . money(plan_amount($key, 'month')) . ' / month'
+               . '  ·  $' . money(plan_amount($key, 'year')) . ' / year';
+    }
+
+    $rows = array(
+        'Price'        => $price,
+        'Short links'  => $p['url_limit'] === null
+            ? 'Unlimited'
+            : $num($p['url_limit']) . ' ' . ($p['limit_period'] === 'total' ? 'total (lifetime)' : 'per month'),
+        'Redirects'    => $p['monthly_visit_cap'] === null
+            ? 'Unlimited'
+            : $num($p['monthly_visit_cap']) . ' / month (account-wide)',
+        'Custom link names' => $p['custom_slugs'] === null
+            ? 'Unlimited'
+            : ((int) $p['custom_slugs'] > 0 ? $num($p['custom_slugs']) : 'Not included'),
+        'QR codes & click stats'   => 'Included',
+        'AI assistant (MCP) access' => $is_paid ? 'Included' : 'Not included',
+        'Custom branded domains'    => $key === 'enterprise' ? 'Included' : 'Not included',
+        'SSO (SAML & OIDC)'         => $key === 'enterprise' ? 'Included' : 'Not included',
+    );
+    if ($is_trial) {
+        $rows['Trial length'] = TRIAL_DAYS . ' days from sign-up';
+    }
+    return $rows;
+}
+
+/**
+ * A single modal <dialog> listing the full spec of every plan. Rendered once
+ * on any page that shows the pricing cards; opened by the per-card
+ * "Full details" buttons (data-plan-dialog) via app.js.
+ */
+function render_plans_dialog()
+{
+    ?>
+    <dialog id="plan-dialog" class="plan-dialog" aria-labelledby="plan-dialog-title">
+      <div class="pd-head">
+        <h2 id="plan-dialog-title">Compare plans in detail</h2>
+        <button type="button" class="pd-close" data-plan-dialog-close aria-label="Close dialog">✕</button>
+      </div>
+      <div class="pd-body">
+        <?php foreach ($GLOBALS['PLANS'] as $key => $p): ?>
+        <section class="pd-plan" id="pd-<?= e($key) ?>" tabindex="-1">
+          <h3><?= e($p['name']) ?></h3>
+          <?php if (!empty($p['blurb'])): ?><p class="pd-blurb"><?= e($p['blurb']) ?></p><?php endif; ?>
+          <dl class="pd-rows">
+            <?php foreach (plan_detail_rows($key, $p) as $label => $val): ?>
+              <div class="pd-row"><dt><?= e($label) ?></dt><dd><?= e($val) ?></dd></div>
+            <?php endforeach; ?>
+          </dl>
+        </section>
+        <?php endforeach; ?>
+      </div>
+    </dialog>
+    <?php
 }
 
 function render_footer()

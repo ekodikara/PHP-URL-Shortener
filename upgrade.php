@@ -21,8 +21,13 @@ render_header('Plans');
   <div class="plans">
     <?php render_plans($user['plan']); ?>
   </div>
+  <p class="center" style="margin:18px 0 0">
+    <button type="button" class="btn btn-ghost" data-plan-dialog=""
+            aria-haspopup="dialog" aria-controls="plan-dialog">Compare all plans in detail</button>
+  </p>
   <p class="hint center">
     Secure payments by Stripe. Cancel anytime — you keep access until the period you paid for ends.
   </p>
 </section>
+<?php render_plans_dialog(); ?>
 <?php render_footer(); ?>

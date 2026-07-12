@@ -6,6 +6,12 @@
 $__plan = plan_config($user['plan']);
 $__can_custom = $__plan['custom_slugs'] === null || $__plan['custom_slugs'] > 0;
 
+// Usage vs the plan's link quota (null limit = unlimited).
+$__limit = $__plan['url_limit'];
+$__used  = plan_usage($pdo, $user);
+$__at_limit  = $__limit !== null && $__used >= $__limit;
+$__near_limit = $__limit !== null && !$__at_limit && ($__used / $__limit) >= 0.8;
+
 if (trial_expired($user)):
 ?>
 <div class="result-inner" style="display:block;text-align:center">
@@ -16,6 +22,23 @@ if (trial_expired($user)):
   <a class="btn btn-solid" href="upgrade">See plans →</a>
 </div>
 <?php return; endif; ?>
+<?php if ($__at_limit): ?>
+<div class="result-inner limit-hit" style="display:block;text-align:center" role="status">
+  <p style="margin:0 0 14px;color:var(--ink-dim)"><?= e(url_limit_message($__plan)) ?></p>
+  <a class="btn btn-solid" href="upgrade">See plans →</a>
+</div>
+<?php return; endif; ?>
+<?php if ($__near_limit): ?>
+<p class="hint limit-near" role="status">
+  <?php if ($__plan['limit_period'] === 'month'): ?>
+    You've used <strong><?= (int) $__used ?> of <?= (int) $__limit ?></strong> links this month.
+    <a href="upgrade">Upgrade</a> for a higher limit.
+  <?php else: ?>
+    You've used <strong><?= (int) $__used ?> of <?= (int) $__limit ?></strong> lifetime links.
+    <a href="upgrade">Upgrade</a> before you run out.
+  <?php endif; ?>
+</p>
+<?php endif; ?>
 <form id="shorten-form" autocomplete="off">
   <?= csrf_field() ?>
   <div class="field">

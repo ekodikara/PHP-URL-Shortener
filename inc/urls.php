@@ -43,6 +43,24 @@ function custom_urls_count(PDO $pdo, $user_id)
 }
 
 /**
+ * Human message for a plan whose link quota is exhausted, worded for the
+ * limit's period: a lifetime 'total' cap vs a per-'month' allowance that
+ * resets. Shared by create_short_url() (server error) and the dashboard
+ * shorten box (proactive notice) so both read identically.
+ */
+function url_limit_message(array $plan)
+{
+    $n    = (int) $plan['url_limit'];
+    $name = $plan['name'];
+    if ($plan['limit_period'] === 'month') {
+        return "You've used all {$n} of this month's links on the {$name} plan. "
+            . 'Your allowance resets at the start of next month — or upgrade for a higher limit.';
+    }
+    return "You've reached your lifetime limit of {$n} links on the {$name} plan. "
+        . 'Upgrade to Pro or Premium to create more.';
+}
+
+/**
  * Create a short link for a user, enforcing the plan rules.
  * $slug is optional (custom name). Returns [row, null] or [null, errorMessage].
  */
@@ -89,12 +107,9 @@ function create_short_url(PDO $pdo, array $user, $long_url, $slug = '', $domain_
             mb_substr($long_url, 0, 200), $user['id']);
     }
 
-    // Link quota — monthly for the trial, lifetime total for paid plans.
+    // Link quota — lifetime 'total' for the trial/premium, per-'month' for Pro.
     if ($plan['url_limit'] !== null && plan_usage($pdo, $user) >= $plan['url_limit']) {
-        $msg = $plan['limit_period'] === 'total'
-            ? 'You have reached your limit of ' . $plan['url_limit'] . ' links. Upgrade to Pro or Premium for more.'
-            : 'You have reached your monthly limit of ' . $plan['url_limit'] . ' links. Upgrade your plan for more.';
-        return array(null, $msg);
+        return array(null, url_limit_message($plan));
     }
 
     // Custom slug handling. custom_slugs: 0 = none, null = unlimited, N = capped.
