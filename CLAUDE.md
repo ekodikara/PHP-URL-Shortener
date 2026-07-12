@@ -172,6 +172,13 @@ Defined in `config.php` as `$GLOBALS['PLANS']`. Enforced centrally in
   `customer.subscription.deleted` downgrades to locked free state).
 - **Cancellation** = keep access until period end. The Customer Portal sets
   `cancel_at_period_end`; we only downgrade on the final `subscription.deleted`.
+  (No refund on cancel — that's compliant under Australian Consumer Law; mandatory
+  refunds only apply to consumer-guarantee failures, handled manually in the
+  Stripe Dashboard.)
+- **Plan changes for existing subscribers go through the Customer Portal**, not a
+  new Checkout Session: `checkout.php` refuses to start checkout when the user
+  already has a `stripe_subscription_id` (a second subscription would double-bill).
+  Configure the Portal (Stripe Dashboard) to allow plan switching + cancellation.
 - **For real webhooks locally**: run `stripe listen --forward-to
   localhost:8088/stripe-webhook` and put the printed `whsec_…` in `.env`.
 - New `users` columns: `billing_interval`, `stripe_customer_id`,

@@ -27,6 +27,15 @@ if (!stripe_ready()) {
     redirect_to('upgrade');
 }
 
+// Already subscribed? Plan changes + cancellation MUST go through the Customer
+// Portal (it swaps the plan with proration on the existing subscription).
+// Creating a second Checkout Session here would leave the old subscription
+// active and double-bill the customer.
+if (!empty($user['stripe_subscription_id'])) {
+    set_flash('error', 'You already have an active subscription — use "Manage billing" on the Plans page to switch plans or cancel.');
+    redirect_to('upgrade');
+}
+
 try {
     $customer = stripe_get_or_create_customer($pdo, $user);
     $session = \Stripe\Checkout\Session::create(array(
