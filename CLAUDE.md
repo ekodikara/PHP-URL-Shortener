@@ -128,23 +128,28 @@ Defined in `config.php` as `$GLOBALS['PLANS']`. Enforced centrally in
 
 | Plan    | Price | url_limit            | monthly_visit_cap    | custom_slugs | is_trial |
 |---------|-------|----------------------|----------------------|--------------|----------|
-| free    | $0    | 20 (total/lifetime)  | 10 / month           | 0            | yes      |
+| free    | $0    | 10 (per month)       | unlimited (null)     | 0            | no       |
 | pro     | $7    | 50 (per month)       | unlimited (null)     | 0            | no       |
 | premium | $12   | unlimited (null)     | unlimited (null)     | 100          | no       |
 
 - **`monthly_visit_cap`** is account-wide redirects per calendar month, enforced in
   `redirect.php` against the link OWNER's plan. Tracked by `users.month_visits` +
   `users.visit_month` (`YYYY-MM`); the counter resets when the month rolls over.
-  Over-cap returns HTTP 410.
+  Over-cap would return HTTP 410 — but **all plans now set this to `null`
+  (unlimited)**, so a link never breaks on volume (competitors cap tracked
+  analytics, not the redirect). The mechanism is dormant but kept config-driven
+  for a possible future capped plan.
 
-- `null` means unlimited. **`limit_period`** is `'month'` (trial) or `'total'`
-  (paid) — Pro's 100 links is a LIFETIME total, not monthly. Usage is computed by
-  `plan_usage()` in `inc/urls.php` (→ `urls_this_month` or `urls_total`).
-- **The `free` plan is a time-limited TRIAL**, not a perpetual tier. New accounts
-  start on it. It lasts `TRIAL_DAYS` (config.php; currently 30) from the user's
-  `created` date — there is no `trial_ends` column, it's computed. Trial helpers
-  live in `inc/auth.php`: `is_on_trial`, `trial_active`, `trial_expired`,
-  `trial_ends_ts`, `trial_days_left`.
+- `null` means unlimited. **`limit_period`** is `'month'` (free, Pro — the count
+  resets each calendar month) or `'total'` (Premium/Enterprise — lifetime). Usage
+  is computed by `plan_usage()` in `inc/urls.php` (→ `urls_this_month` or
+  `urls_total`).
+- **The `free` plan is a PERPETUAL free tier** (`is_trial => false`), not a
+  time-limited trial: 10 new links/month, unlimited redirects, no custom slugs,
+  no card required. New accounts start on it and stay indefinitely. The
+  `TRIAL_DAYS` constant and the `trial_*` helpers in `inc/auth.php`
+  (`is_on_trial`, `trial_active`, `trial_expired`, `trial_ends_ts`,
+  `trial_days_left`) are now **dormant** — kept for a possible future paid trial.
 
 ## Billing (Stripe subscriptions)
 

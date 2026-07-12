@@ -72,9 +72,10 @@ if ($bad !== '') {
     die('This link has been disabled.');
 }
 
-// Account-wide monthly visit cap (e.g. free trial = 10/month; paid = unlimited).
-// Done as a single atomic conditional UPDATE so concurrent visits can't exceed
-// the cap (the increment only succeeds while under the limit / in a new month).
+// Account-wide monthly visit cap (generic, config-driven). All current plans set
+// monthly_visit_cap = null (unlimited), so this is dormant — links never 410 on
+// volume. Kept null-guarded for any future capped plan. Atomic conditional
+// UPDATE so concurrent visits can't exceed a cap if one is ever set.
 $cap = plan_config($link['plan'])['monthly_visit_cap'];
 if ($cap !== null) {
     $month = date('Y-m');

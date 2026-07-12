@@ -74,7 +74,7 @@ function render_billing_toggle()
 function render_plans($current = null)
 {
     $features = array(
-        'free'       => array(TRIAL_DAYS . '-day free trial', '20 links total', '10 visits / month', 'QR codes + click stats'),
+        'free'       => array('Free forever', '10 links / month', 'Unlimited redirects', 'QR codes + click stats'),
         'pro'        => array('50 links / month', 'Unlimited visits', 'QR codes + click stats', 'Priority redirects'),
         'premium'    => array('Unlimited links', 'Unlimited visits', '100 custom link names', 'Everything in Pro'),
         'enterprise' => array('Everything in Premium', 'Custom branded domains', 'SSO (SAML & OIDC)', 'Unlimited custom names'),
@@ -93,8 +93,8 @@ function render_plans($current = null)
       <?php if ($is_contact): ?>
         <div class="price" style="font-size:1.9rem">Custom</div>
         <p class="save-note" style="visibility:visible">Tailored to your team</p>
-      <?php elseif ($is_trial): ?>
-        <div class="price">$0<span>/<?= TRIAL_DAYS ?> days</span></div>
+      <?php elseif ((int) $p['price'] === 0): ?>
+        <div class="price">$0<span>/forever</span></div>
       <?php else: ?>
         <div class="price"
              data-monthly="<?= e(money(plan_amount($key, 'month'))) ?>"
@@ -112,16 +112,16 @@ function render_plans($current = null)
               aria-label="Full details for the <?= e($p['name']) ?> plan">Full details</button>
       <?php if ($is_contact): ?>
         <a class="btn <?= $is_current ? 'btn-ghost' : 'btn-solid' ?> btn-block" href="enterprise"><?= $is_current ? 'Your plan · contact us' : 'Contact sales' ?></a>
-      <?php elseif ($is_current && $is_trial): ?>
-        <button class="btn btn-ghost btn-block" disabled><?= trial_active($u) ? trial_days_left($u) . ' day' . (trial_days_left($u) === 1 ? '' : 's') . ' left' : 'Trial ended' ?></button>
+      <?php elseif ((int) $p['price'] === 0): /* perpetual free */ ?>
+        <?php if ($is_current): ?>
+          <button class="btn btn-ghost btn-block" disabled>Your plan</button>
+        <?php elseif ($u): ?>
+          <button class="btn btn-ghost btn-block" disabled>Free forever</button>
+        <?php else: ?>
+          <a class="btn btn-solid btn-block" href="register">Get started free</a>
+        <?php endif; ?>
       <?php elseif ($is_current): ?>
         <form method="post" action="billing-portal"><?= csrf_field() ?><button class="btn btn-ghost btn-block" type="submit">Manage billing</button></form>
-      <?php elseif ($is_trial): ?>
-        <?php if ($u): ?>
-          <button class="btn btn-ghost btn-block" disabled>New accounts only</button>
-        <?php else: ?>
-          <a class="btn btn-solid btn-block" href="register">Start free trial</a>
-        <?php endif; ?>
       <?php elseif ($u): ?>
         <form method="post" action="checkout">
           <?= csrf_field() ?>
@@ -143,15 +143,14 @@ function render_plans($current = null)
  */
 function plan_detail_rows($key, array $p)
 {
-    $is_trial   = !empty($p['is_trial']);
     $is_contact = !empty($p['contact']);
-    $is_paid    = !$is_trial;                     // pro / premium / enterprise
+    $is_paid    = ($key !== 'free');              // pro / premium / enterprise
     $num = function ($v) { return number_format((int) $v); };
 
     if ($is_contact) {
         $price = 'Custom — contact sales';
-    } elseif ($is_trial) {
-        $price = '$0 for ' . TRIAL_DAYS . ' days';
+    } elseif ((int) $p['price'] === 0) {
+        $price = 'Free forever';
     } else {
         $price = '$' . money(plan_amount($key, 'month')) . ' / month'
                . '  ·  $' . money(plan_amount($key, 'year')) . ' / year';
@@ -173,9 +172,6 @@ function plan_detail_rows($key, array $p)
         'Custom branded domains'    => $key === 'enterprise' ? 'Included' : 'Not included',
         'SSO (SAML & OIDC)'         => $key === 'enterprise' ? 'Included' : 'Not included',
     );
-    if ($is_trial) {
-        $rows['Trial length'] = TRIAL_DAYS . ' days from sign-up';
-    }
     return $rows;
 }
 

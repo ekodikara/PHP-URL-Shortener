@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             log_security_event($pdo, 'register', $email, $uid);
             establish_session($uid);
             send_verification_email($pdo, $uid, $email);
-            set_flash('success', 'Welcome to ' . APP_NAME . '! Your ' . TRIAL_DAYS . '-day free trial has started. Check your email to verify your address.');
+            set_flash('success', 'Welcome to ' . APP_NAME . '! Your free account is ready. Check your email to verify your address.');
             redirect_to('dashboard');
         }
     }
@@ -49,7 +49,7 @@ render_header('Create account');
 <div class="auth-wrap">
   <div class="card glass">
     <h1>Create your account</h1>
-    <p class="sub"><?= e(TRIAL_DAYS) ?>-day free trial — <?= e($GLOBALS['PLANS']['free']['url_limit']) ?> links total, no card required.</p>
+    <p class="sub">Free forever — <?= e($GLOBALS['PLANS']['free']['url_limit']) ?> links a month, no card required.</p>
 
     <?php if ($error): ?><div class="form-error" role="alert"><?= e($error) ?></div><?php endif; ?>
 

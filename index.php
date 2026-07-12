@@ -41,12 +41,12 @@ $bench_cut   = max(0, strlen($bench_long) - strlen($bench_short));
   <?php require __DIR__ . '/inc/shorten_box.php'; ?>
 <?php else: ?>
   <h2>Start shortening in seconds</h2>
-  <p class="sub">Start your free trial to make links, track clicks, and generate QR codes.</p>
+  <p class="sub">Create a free account to make links, track clicks, and generate QR codes.</p>
   <div class="input-row">
-    <a class="btn btn-solid btn-block" href="register">Start free trial</a>
+    <a class="btn btn-solid btn-block" href="register">Get started free</a>
     <a class="btn btn-ghost btn-block" href="login">Log in</a>
   </div>
-  <p class="hint"><?= e(TRIAL_DAYS) ?>-day free trial — 20 links total, no card required.</p>
+  <p class="hint">Free forever — <?= e($GLOBALS['PLANS']['free']['url_limit']) ?> links a month, no card required.</p>
 <?php endif; ?>
 </div>
 

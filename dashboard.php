@@ -108,12 +108,10 @@ render_header('Dashboard');
 
 <div class="card glass">
   <h2>Create a short link</h2>
-  <?php if (is_on_trial($user) && trial_active($user)): ?>
-    <p class="sub">You're on the <strong>free trial</strong> — <strong><?= trial_days_left($user) ?> day<?= trial_days_left($user) === 1 ? '' : 's' ?></strong> left. <a href="upgrade">Upgrade →</a></p>
-  <?php elseif (trial_expired($user)): ?>
-    <p class="sub">Your free trial has <strong>ended</strong>. Existing links still redirect; <a href="upgrade">upgrade to create new ones →</a></p>
-  <?php else: ?>
+  <?php if (plan_is_paid($user)): ?>
     <p class="sub">On the <strong><?= e($plan['name']) ?></strong> plan.</p>
+  <?php else: ?>
+    <p class="sub">You're on the <strong>Free</strong> plan. <a href="upgrade">See paid plans →</a></p>
   <?php endif; ?>
 
   <div class="meter">

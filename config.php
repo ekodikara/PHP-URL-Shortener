@@ -59,7 +59,9 @@ define('TRUSTED_PROXIES', getenv('TRUSTED_PROXIES') ?: '');
 define('ALLOWED_CHARS', '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ');
 define('CODE_LENGTH', 6);
 
-// New accounts start on a time-limited trial (plan key 'free').
+// Legacy trial length. The 'free' plan is now a PERPETUAL free tier
+// (is_trial = false), so no plan is time-limited and the trial_* helpers in
+// inc/auth.php are dormant; kept for a possible future paid trial.
 define('TRIAL_DAYS', 30);
 
 // How long append-only log rows are kept before scripts/prune.php deletes them.
@@ -153,19 +155,20 @@ define('SSO_DEFAULT_PLAN', getenv('SSO_DEFAULT_PLAN') ?: 'enterprise');
 //   monthly_visit_cap : max redirects/month across ALL the user's links (null = unlimited)
 //   custom_slugs      : max custom-named links allowed (0 = random codes only)
 // ---------------------------------------------------------------------------
-// 'is_trial' plans are time-limited (TRIAL_DAYS from the user's signup date).
+// 'is_trial' plans would be time-limited (TRIAL_DAYS from signup); none are today
+// (free is perpetual). 'monthly_visit_cap' null = redirects are never capped.
 // While active they grant the listed limits; once expired the user can no
 // longer create NEW links (existing links keep redirecting) until they upgrade.
 $GLOBALS['PLANS'] = array(
     'free' => array(
-        'name'         => 'Free trial',
+        'name'         => 'Free',
         'price'        => 0,
-        'url_limit'         => 20,    // 20 links TOTAL for the whole trial
-        'limit_period'      => 'total',
-        'monthly_visit_cap' => 10,    // 10 redirects/month across all links
+        'url_limit'         => 10,     // 10 new links per month (resets monthly)
+        'limit_period'      => 'month',
+        'monthly_visit_cap' => null,   // unlimited redirects — a free link never breaks
         'custom_slugs'      => 0,
-        'is_trial'          => true,
-        'blurb'        => 'Try it free for ' . TRIAL_DAYS . ' days.',
+        'is_trial'          => false,  // perpetual free tier, not a time-limited trial
+        'blurb'        => 'Free forever — no card needed.',
     ),
     'pro' => array(
         'name'         => 'Pro',
