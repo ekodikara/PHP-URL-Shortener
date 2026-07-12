@@ -15,7 +15,12 @@ Stripe registration checklist.
 
 ## What Stripe requires to register (Australia)
 
-To activate a Stripe account for **Moonxt Pty Ltd**:
+> **No company yet?** Stripe AU also accepts a **sole trader (ABN only, no ACN)** —
+> the cheapest same-day path for a solo founder. See **`BUSINESS-SETUP.md`** for how
+> to register (sole trader vs Pty Ltd, costs, steps). The checklist below is for the
+> **Pty Ltd company** path.
+
+To activate a Stripe account for **Moonxt Pty Ltd** (company path):
 
 - **ABN** (+ **ACN** since it's a Pty Ltd) — Stripe verifies both against the ABR.
 - An **Australian AUD business bank account** (BSB + account number) for payouts.
