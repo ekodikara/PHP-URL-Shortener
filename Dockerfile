@@ -6,6 +6,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN docker-php-ext-install pdo_mysql
 
+# APCu: shared-memory cache so the ~77k-line adult-domain blocklist is parsed
+# once per worker (keyed by mtime) instead of on every redirect / link-create.
+RUN pecl install apcu \
+    && docker-php-ext-enable apcu \
+    && printf 'apc.enabled=1\napc.shm_size=64M\n' > /usr/local/etc/php/conf.d/apcu.ini
+
 # Enable mod_rewrite (clean URLs), mod_headers (spoof headers), mod_security2 (Server header)
 RUN a2enmod rewrite headers security2
 

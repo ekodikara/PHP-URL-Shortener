@@ -55,7 +55,24 @@ if (!preg_match('|^https?://|i', $link['long_url'])) {
     render_error_page(404, 'Link not found', 'This short link doesn\'t exist or was removed. Check the address for typos.');
 }
 
-// Account-wide monthly visit cap (e.g. free trial = 50/month; paid = unlimited).
+// Re-check the destination (cached): malicious per Safe Browsing OR disallowed
+// by our acceptable-use policy. A link whose target crosses either line after
+// creation is auto-disabled and never redirected. Done BEFORE the visit-cap
+// increment so a rejected (410) request never burns the owner's allowance.
+$bad = url_is_disallowed($pdo, $link['long_url']);
+if ($bad !== '') {
+    try {
+        $pdo->prepare('UPDATE urls SET blocked = 1 WHERE id = ?')->execute(array($link['id']));
+    } catch (PDOException $e) {
+        error_log('auto-block failed: ' . $e->getMessage());
+    }
+    $event = strpos($bad, 'unsafe:') === 0 ? 'auto_block_malicious' : 'auto_block_disallowed';
+    log_security_event($pdo, $event, $bad . ' ' . $code, $link['owner_id']);
+    http_response_code(410);
+    die('This link has been disabled.');
+}
+
+// Account-wide monthly visit cap (e.g. free trial = 10/month; paid = unlimited).
 // Done as a single atomic conditional UPDATE so concurrent visits can't exceed
 // the cap (the increment only succeeds while under the limit / in a new month).
 $cap = plan_config($link['plan'])['monthly_visit_cap'];
@@ -74,22 +91,6 @@ if ($cap !== null) {
     } catch (PDOException $e) {
         error_log('monthly visit count failed: ' . $e->getMessage());
     }
-}
-
-// Re-check the destination (cached): malicious per Safe Browsing OR disallowed
-// by our acceptable-use policy. A link whose target crosses either line after
-// creation is auto-disabled and never redirected.
-$bad = url_is_disallowed($pdo, $link['long_url']);
-if ($bad !== '') {
-    try {
-        $pdo->prepare('UPDATE urls SET blocked = 1 WHERE id = ?')->execute(array($link['id']));
-    } catch (PDOException $e) {
-        error_log('auto-block failed: ' . $e->getMessage());
-    }
-    $event = strpos($bad, 'unsafe:') === 0 ? 'auto_block_malicious' : 'auto_block_disallowed';
-    log_security_event($pdo, $event, $bad . ' ' . $code, $link['owner_id']);
-    http_response_code(410);
-    die('This link has been disabled.');
 }
 
 // Count the visit on the link (best-effort, lifetime counter).

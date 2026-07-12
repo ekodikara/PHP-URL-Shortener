@@ -92,4 +92,48 @@ final class ContentFilterTest extends TestCase
         $this->assertSame('', normalize_blockable_host('localhost'));
         $this->assertSame('', normalize_blockable_host(''));
     }
+
+    // --- url_host trailing-dot canonicalization (security regression) --------
+
+    public function testUrlHostStripsTrailingRootDot(): void
+    {
+        // "pornhub.com." resolves to the same host — must canonicalize so it
+        // can't dodge an exact blocklist match.
+        $this->assertSame('pornhub.com', url_host('https://pornhub.com./path'));
+        $this->assertSame('example.co.uk', url_host('https://Example.CO.UK./'));
+    }
+
+    // --- domain_is_blocked matching (security regressions) -------------------
+
+    private function pdoWithBlocked(array $domains): PDO
+    {
+        $pdo = new PDO('sqlite::memory:');
+        $pdo->exec('CREATE TABLE blocked_domains (id INTEGER PRIMARY KEY, domain TEXT)');
+        foreach ($domains as $d) {
+            $pdo->prepare('INSERT INTO blocked_domains (domain) VALUES (?)')->execute(array($d));
+        }
+        return $pdo;   // ADULT_BLOCKLIST='' in this suite → only the admin layer is active
+    }
+
+    public function testAdminBlockedRegistrableDomainCoversSubdomains(): void
+    {
+        $pdo = $this->pdoWithBlocked(array('badsite.com'));
+        $this->assertTrue(domain_is_blocked($pdo, 'x.y.badsite.com'));
+        $this->assertFalse(domain_is_blocked($pdo, 'notbadsite.com'));
+    }
+
+    public function testAdminBlockedSubdomainCoversDeeperSubdomains(): void
+    {
+        // Regression: a subdomain-specific admin block must also catch deeper subs.
+        $pdo = $this->pdoWithBlocked(array('videos.badsite.com'));
+        $this->assertTrue(domain_is_blocked($pdo, 'x.videos.badsite.com'));
+        $this->assertFalse(domain_is_blocked($pdo, 'other.badsite.com'));
+    }
+
+    public function testTrailingDotHostIsCanonicalized(): void
+    {
+        // Regression: "badsite.com." must match an entry for "badsite.com".
+        $pdo = $this->pdoWithBlocked(array('badsite.com'));
+        $this->assertTrue(domain_is_blocked($pdo, 'badsite.com.'));
+    }
 }

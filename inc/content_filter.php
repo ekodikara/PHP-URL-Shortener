@@ -29,7 +29,9 @@ function content_filter_enabled()
 function url_host($url)
 {
     $h = parse_url((string) $url, PHP_URL_HOST);
-    return $h ? strtolower($h) : '';
+    // Lowercase and drop a trailing DNS root dot: "Pornhub.com." resolves to the
+    // exact same host but would otherwise dodge an exact blocklist match.
+    return $h ? rtrim(strtolower($h), '.') : '';
 }
 
 /**
@@ -95,10 +97,25 @@ function adult_blocklist()
         return $set;
     }
     $path = ADULT_BLOCKLIST;
-    $set = (is_string($path) && is_file($path) && is_readable($path))
-        ? parse_hosts_blocklist(file_get_contents($path))
-        : array();
-    return $set;
+    if (!is_string($path) || !is_file($path) || !is_readable($path)) {
+        return $set = array();
+    }
+    // The bundled list is ~77k lines (~1.3 MB). Parsing it on every link-create
+    // AND every redirect (the hot path) is a DoS-amplification vector, and
+    // mod_php resets function statics each request — so persist the parsed set
+    // in APCu, keyed by the file's mtime (re-parsed only when the list changes).
+    $key = 'snip_adult_blocklist_' . (@filemtime($path) ?: 0);
+    if (function_exists('apcu_enabled') && apcu_enabled()) {
+        $ok = false;
+        $cached = apcu_fetch($key, $ok);
+        if ($ok && is_array($cached)) {
+            return $set = $cached;
+        }
+        $set = parse_hosts_blocklist(file_get_contents($path));
+        apcu_store($key, $set, 86400);
+        return $set;
+    }
+    return $set = parse_hosts_blocklist(file_get_contents($path));
 }
 
 /**
@@ -107,29 +124,41 @@ function adult_blocklist()
  */
 function domain_is_blocked(PDO $pdo, $host)
 {
-    $host = strtolower(trim((string) $host));
+    // Canonicalize as registrable_domain() does: lowercase + strip surrounding
+    // whitespace AND a trailing root dot, so "Pornhub.com." can't dodge a match.
+    $host = strtolower(trim((string) $host, " \t\n\r\0\x0B."));
     if ($host === '') {
         return false;
     }
     $reg = registrable_domain($host);
-    $set = adult_blocklist();
 
-    // Check the full host, then each parent, stopping at the registrable domain
-    // (so we never test — and match — a bare public suffix like "com").
+    // Candidate suffixes: the full host, then each parent, down to the
+    // registrable domain (never a bare public suffix like "com"). BOTH the
+    // bundled set and the admin table are matched against this same set, so a
+    // deeper subdomain can't slip past a blocklist entry for a parent domain.
     $labels = explode('.', $host);
+    $candidates = array();
     for ($i = 0, $n = count($labels); $i < $n; $i++) {
         $cand = implode('.', array_slice($labels, $i));
-        if (isset($set[$cand])) {
-            return true;
-        }
+        $candidates[] = $cand;
         if ($cand === $reg) {
             break;
         }
     }
 
+    // 1. Bundled blocklist (in-memory set).
+    $set = adult_blocklist();
+    foreach ($candidates as $cand) {
+        if (isset($set[$cand])) {
+            return true;
+        }
+    }
+
+    // 2. Admin-managed blocklist (same suffix set, one indexed query).
     try {
-        $stmt = $pdo->prepare('SELECT 1 FROM blocked_domains WHERE domain = ? OR domain = ? LIMIT 1');
-        $stmt->execute(array($host, $reg));
+        $in = implode(',', array_fill(0, count($candidates), '?'));
+        $stmt = $pdo->prepare("SELECT 1 FROM blocked_domains WHERE domain IN ($in) LIMIT 1");
+        $stmt->execute($candidates);
         if ($stmt->fetch()) {
             return true;
         }
