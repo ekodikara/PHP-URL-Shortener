@@ -151,7 +151,8 @@ committed; refresh them with `scripts/update-adult-blocklist.sh` /
   reaches **AUD $75k/yr** — enable **Stripe Tax** to compute/collect it. The
   Stripe integration is already built, so it's the default. A Merchant-of-Record
   (Paddle / Lemon Squeezy) is only worth adopting to offload global sales-tax
-  compliance, and would replace `inc/stripe.php`.
+  compliance, and would replace `inc/stripe.php`. **Full analysis + the Stripe
+  registration checklist: see `PAYMENTS.md`.**
 - **Email deliverability is a launch gate.** `REQUIRE_EMAIL_VERIFICATION` is on
   and the base image has no MTA — point PHP `mail()` at an SMTP relay
   (SES/Postmark/Resend) and add **SPF/DKIM/DMARC** for `SITE_DOMAIN`, or
