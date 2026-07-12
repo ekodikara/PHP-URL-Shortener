@@ -640,3 +640,19 @@ input.input-compact { width: 160px; padding: 6px 8px; }
 .rk-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--kraft); overflow: hidden; border: 1px solid var(--rule); }
 .rk-bar i { display: block; height: 100%; background: var(--mark); }
 .rk-n { flex: 0 0 auto; color: var(--ink-dim); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }
+
+/* Live activity feed */
+.live-card .live-dot {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  background: var(--mark); margin-left: 8px; vertical-align: middle;
+  animation: livepulse 1.6s ease-in-out infinite;
+}
+@keyframes livepulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.live-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.live-list li { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px dashed var(--rule); font-size: 0.9rem; }
+.live-list li:first-child { border-top: none; }
+.lv-flag { flex: 0 0 auto; font-size: 1.05rem; }
+.lv-main { flex: 1; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-ref { flex: 0 0 auto; color: var(--ink-dim); max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-time { flex: 0 0 auto; color: var(--ink-faint); font-variant-numeric: tabular-nums; min-width: 6ch; text-align: right; }
+.live-empty { color: var(--ink-faint); }

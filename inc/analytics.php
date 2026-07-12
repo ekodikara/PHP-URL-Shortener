@@ -130,6 +130,39 @@ function link_breakdown(PDO $pdo, $code, $since, $column, $limit = 10)
 }
 
 /**
+ * Recent individual clicks for a code (newest first) since $since — feeds the
+ * near-real-time "live activity" view. Returns display-safe fields only (no IP,
+ * no visitor_hash); the caller adds the country flag.
+ */
+function link_recent_events(PDO $pdo, $code, $since, $limit = 30)
+{
+    $stmt = $pdo->prepare(
+        'SELECT ts, browser, platform, device, country, referer
+           FROM access_log WHERE code = ? AND ts > ? ORDER BY ts DESC, id DESC LIMIT ' . (int) $limit
+    );
+    $stmt->execute(array($code, (int) $since));
+    $out = array();
+    foreach ($stmt->fetchAll() as $r) {
+        $ref = $r['referer'];
+        if ($ref === '') {
+            $host = 'Direct';
+        } else {
+            $h = parse_url($ref, PHP_URL_HOST);
+            $host = $h ? strtolower(preg_replace('/^www\./', '', $h)) : 'Other';
+        }
+        $out[] = array(
+            'ts'      => (int) $r['ts'],
+            'browser' => (string) $r['browser'],
+            'platform'=> (string) $r['platform'],
+            'device'  => (string) $r['device'],
+            'cc'      => (string) $r['country'],
+            'ref'     => $host,
+        );
+    }
+    return $out;
+}
+
+/**
  * Referrers collapsed to registrable host ('' => 'Direct'), re-summed and
  * ranked. Reads the raw referer breakdown (which stores full URLs) and folds
  * multiple paths on one host into a single row.

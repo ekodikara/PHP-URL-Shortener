@@ -119,6 +119,63 @@
     });
   }
 
+  // Live activity feed on the per-link stats page (polled; no websockets).
+  var liveFeed = document.getElementById('live-feed');
+  if (liveFeed) {
+    var liveList = document.getElementById('live-list');
+    var code = liveFeed.getAttribute('data-code');
+    var since = parseInt(liveFeed.getAttribute('data-since'), 10) || 0;
+
+    function relTime(ts) {
+      var s = Math.max(0, Math.floor(Date.now() / 1000) - ts);
+      if (s < 60) return s + 's ago';
+      if (s < 3600) return Math.floor(s / 60) + 'm ago';
+      if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+      return Math.floor(s / 86400) + 'd ago';
+    }
+    function eventRow(ev) {
+      var li = document.createElement('li');
+      var bits = [ev.device, ev.browser, ev.platform].filter(Boolean).join(' · ');
+      li.innerHTML =
+        '<span class="lv-flag">' + (ev.flag || '') + '</span>' +
+        '<span class="lv-main">' + escapeHtml(bits) + '</span>' +
+        '<span class="lv-ref">' + escapeHtml(ev.ref || '') + '</span>' +
+        '<span class="lv-time" data-ts="' + ev.ts + '">' + relTime(ev.ts) + '</span>';
+      return li;
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+      });
+    }
+    function poll() {
+      fetch('stats?code=' + encodeURIComponent(code) + '&events=1&since=' + since, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin'
+      })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !data.events) return;
+          if (data.events.length) {
+            var empty = liveList.querySelector('.live-empty');
+            if (empty) empty.remove();
+            // API returns newest-first; insert so newest ends up on top.
+            data.events.slice().reverse().forEach(function (ev) {
+              if (ev.ts > since) since = ev.ts;
+              liveList.insertBefore(eventRow(ev), liveList.firstChild);
+            });
+            while (liveList.children.length > 40) liveList.removeChild(liveList.lastChild);
+          }
+          // Refresh relative timestamps already on screen.
+          liveList.querySelectorAll('.lv-time').forEach(function (el) {
+            el.textContent = relTime(parseInt(el.getAttribute('data-ts'), 10) || 0);
+          });
+        })
+        .catch(function () {});
+    }
+    poll();
+    setInterval(poll, 5000);
+  }
+
   // Delegated copy buttons (works for static + ajax-inserted nodes).
   document.addEventListener('click', function (ev) {
     var btn = ev.target.closest('[data-copy]');

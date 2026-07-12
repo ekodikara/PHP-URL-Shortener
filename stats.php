@@ -38,6 +38,19 @@ if (isset($_GET['export']) && $_GET['export'] === 'csv') {
     exit;
 }
 
+// Live-activity JSON feed (polled by app.js) — recent clicks newest-first.
+if (isset($_GET['events'])) {
+    $sinceTs = isset($_GET['since']) ? (int) $_GET['since'] : (time() - 86400);
+    $events = link_recent_events($pdo, $code, $sinceTs, 30);
+    foreach ($events as &$ev) {
+        $ev['flag'] = $ev['cc'] !== '' ? country_flag($ev['cc']) : '';
+    }
+    unset($ev);
+    header('Content-Type: application/json');
+    echo json_encode(array('now' => time(), 'events' => $events));
+    exit;
+}
+
 $refs     = link_referrers($pdo, $code, $since);
 $browsers = link_breakdown($pdo, $code, $since, 'browser');
 $oses     = link_breakdown($pdo, $code, $since, 'platform');
@@ -154,6 +167,13 @@ render_header('Stats · /' . $link['code']);
     <span><?= e(gmdate('M j', $series[count($series) - 1]['day'])) ?></span>
   </div>
   <?php endif; ?>
+</div>
+
+<div class="card glass live-card" id="live-feed"
+     data-code="<?= e($link['code']) ?>" data-since="<?= time() - 86400 ?>">
+  <h2>Live activity <span class="live-dot" aria-hidden="true"></span></h2>
+  <p class="sub">Recent clicks, newest first — refreshes automatically every few seconds.</p>
+  <ul class="live-list" id="live-list"><li class="live-empty">Waiting for clicks…</li></ul>
 </div>
 
 <div class="analytics-grid">
