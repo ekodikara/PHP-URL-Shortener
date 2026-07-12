@@ -162,6 +162,7 @@ render_header('Dashboard');
           <div class="row-actions">
             <a class="icon-btn" href="<?= e($short) ?>" target="_blank" rel="noopener" title="Open" aria-label="Open short link /<?= e($l['code']) ?>">↗</a>
             <button class="icon-btn" type="button" data-copy="<?= e($short) ?>" title="Copy" aria-label="Copy short link /<?= e($l['code']) ?>">⧉</button>
+            <a class="icon-btn" href="stats?code=<?= e($l['code']) ?>" title="Stats" aria-label="Analytics for /<?= e($l['code']) ?>">📊</a>
             <form method="post" action="link-toggle" style="display:inline">
               <?= csrf_field() ?>
               <input type="hidden" name="code" value="<?= e($l['code']) ?>">

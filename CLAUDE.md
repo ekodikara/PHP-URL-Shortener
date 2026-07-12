@@ -270,7 +270,28 @@ so paid users can drive it from AI assistants.
   (`users.is_admin` column OR `ADMIN_EMAILS` config). Block/unblock users & links,
   review recent access + security events. alice@example.com is admin by default.
 - **Access logging** — `log_access()` writes every redirect to `access_log`
-  (ts, code, ip, browser, platform, referer, UA) via `parse_user_agent()`.
+  (ts, code, ip, browser, platform, `device`, referer, UA, `visitor_hash`) via
+  `parse_user_agent()` (which also classifies device: Mobile/Tablet/Desktop).
+
+## Link analytics (`inc/analytics.php`, `stats.php`)
+
+- **Per-link stats page** — `stats.php` (clean `/stats?code=<code>`, in
+  `RESERVED_SLUGS`, owner-scoped). Pure aggregation over `access_log` — no new
+  tracking surface. Shows: total + **unique** clicks, clicks-over-time (inline
+  CSP-safe SVG bar chart, zero-filled), top referrers (host-collapsed, ''→Direct),
+  and browser/OS/device breakdowns, with a 7/30/90/all range selector and a
+  **CSV export** (`&export=csv`). Linked from a 📊 action on each dashboard row.
+- **Unique clicks** — `visitor_hash` = `sha256(ANALYTICS_SALT | UTC-date | ip |
+  ua | code)`, written at redirect time. Daily-rotating + secret-salted, so it
+  dedups within a day, is non-reversible, and needs no cookie (privacy-friendly;
+  lets raw IPs be dropped later). `COUNT(DISTINCT visitor_hash)` = uniques.
+- **Helpers** (`inc/analytics.php`): `analytics_range()`, `link_owned_by()`,
+  `link_click_summary()`, `link_click_timeseries()`, `link_breakdown()` (column
+  whitelisted — no SQL interpolation), `link_referrers()`. Schema: migration
+  `005_analytics.sql` (device + visitor_hash + composite `code_ts` index). MCP
+  `get_stats` also returns last-30-day clicks + uniques.
+- Deferred (see the analytics research): country geo (MaxMind GeoLite2), a polled
+  "live" view, human-vs-bot split, conversion tracking, retention-tiering.
 
 ## Abuse protection (Safe Browsing, reports, interstitial, terms)
 

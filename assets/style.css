@@ -616,3 +616,27 @@ input.input-compact { width: 160px; padding: 6px 8px; }
 .pd-row:first-child { border-top: none; }
 .pd-row dt { color: var(--ink-dim); margin: 0; }
 .pd-row dd { color: var(--ink); margin: 0; font-weight: 600; text-align: right; }
+
+/* --- Link analytics (stats.php) ------------------------------------------ */
+.range-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 20px; }
+.range-tab {
+  padding: 6px 13px; border-radius: 999px; font-size: 0.85rem; text-decoration: none;
+  color: var(--ink-dim); border: 1px solid var(--rule-hi); background: transparent;
+}
+.range-tab:hover { color: var(--ink); border-color: var(--ink); }
+.range-tab.is-active { color: var(--on-accent); background: var(--accent-btn); border-color: var(--accent-btn); }
+
+.click-chart { width: 100%; height: 150px; display: block; margin-top: 6px; }
+.click-chart rect { fill: var(--mark); transition: fill 0.15s; }
+.click-chart rect:hover { fill: var(--accent); }
+.chart-axis { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--ink-faint); margin-top: 6px; }
+
+.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; }
+.analytics-grid .card { margin-top: 0; }
+
+.rank-list { list-style: none; margin: 4px 0 0; padding: 0; }
+.rank-list li { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 0.9rem; }
+.rk-label { flex: 0 0 34%; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-bar { flex: 1; height: 8px; border-radius: 4px; background: var(--kraft); overflow: hidden; border: 1px solid var(--rule); }
+.rk-bar i { display: block; height: 100%; background: var(--mark); }
+.rk-n { flex: 0 0 auto; color: var(--ink-dim); font-variant-numeric: tabular-nums; min-width: 3ch; text-align: right; }

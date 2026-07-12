@@ -111,11 +111,14 @@ CREATE TABLE IF NOT EXISTS `access_log` (
   `ip`         VARCHAR(45) NOT NULL DEFAULT '',
   `browser`    VARCHAR(40) NOT NULL DEFAULT '',
   `platform`   VARCHAR(40) NOT NULL DEFAULT '',
+  `device`     VARCHAR(10) NOT NULL DEFAULT '',    -- Mobile | Tablet | Desktop (from UA)
   `referer`    VARCHAR(255) NOT NULL DEFAULT '',
   `user_agent` VARCHAR(255) NOT NULL DEFAULT '',
+  `visitor_hash` CHAR(64) NOT NULL DEFAULT '',     -- daily-salted hash(ip+ua+code) for unique counts
   PRIMARY KEY (`id`),
   KEY `ts` (`ts`),
-  KEY `code` (`code`)
+  KEY `code` (`code`),
+  KEY `code_ts` (`code`, `ts`)                     -- per-link time-range aggregation
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Cached destination-URL verdicts. `threat`/`checked` are Google Safe Browsing;

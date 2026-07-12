@@ -131,6 +131,13 @@ define('CONTENT_FILTER_ON', getenv('CONTENT_FILTER_ON') !== '0');
 // Bundled adult-domain blocklist (hosts-file or bare-domain format, one per line).
 define('ADULT_BLOCKLIST', getenv('ADULT_BLOCKLIST') ?: __DIR__ . '/data/adult-domains.txt');
 
+// --- Analytics --------------------------------------------------------------
+// Server-side secret for hashing a visitor's IP+UA into a daily-rotating,
+// non-reversible visitor_hash (unique-click counting without a cookie). The
+// date component means hashes can't be linked across days; the secret means
+// they can't be reversed — so raw IPs can later be dropped for privacy.
+define('ANALYTICS_SALT', getenv('ANALYTICS_SALT') ?: hash('sha256', 'snip-analytics|' . DB_PASSWORD . '|' . APP_NAME));
+
 // --- Enterprise SSO (env-gated; active only when configured) ---------------
 // OIDC: set issuer (for discovery) OR the explicit endpoints, plus client creds.
 define('OIDC_CLIENT_ID', getenv('OIDC_CLIENT_ID') ?: '');
@@ -216,6 +223,6 @@ $GLOBALS['RESERVED_SLUGS'] = array(
     'checkout', 'billing', 'billing-success', 'billing-portal', 'stripe-webhook',
     'connect', 'mcp', 'tokens', 'admin', 'link-toggle',
     'enterprise', 'domains', 'sso', 'tls-check', 'health',
-    'terms', 'report', 'abuse',
+    'terms', 'report', 'abuse', 'stats', 'analytics',
     'forgot', 'reset', 'verify',
 );

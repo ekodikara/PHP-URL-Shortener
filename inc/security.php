@@ -371,7 +371,20 @@ function parse_user_agent($ua)
                    'Linux' => 'Linux') as $needle => $name) {
         if (stripos($ua, $needle) !== false) { $platform = $name; break; }
     }
-    return array('browser' => $browser, 'platform' => $platform);
+    // Device class from the UA (mobile / tablet / desktop). Android without
+    // "Mobile" is conventionally a tablet.
+    if (stripos($ua, 'iPad') !== false || stripos($ua, 'Tablet') !== false) {
+        $device = 'Tablet';
+    } elseif (preg_match('/Mobi|iPhone|Windows Phone|IEMobile/i', $ua)) {
+        $device = 'Mobile';
+    } elseif (stripos($ua, 'Android') !== false) {
+        $device = preg_match('/Mobile/i', $ua) ? 'Mobile' : 'Tablet';
+    } elseif ($ua === '') {
+        $device = 'Other';
+    } else {
+        $device = 'Desktop';
+    }
+    return array('browser' => $browser, 'platform' => $platform, 'device' => $device);
 }
 
 /** Record an access event (e.g. a short-link redirect) for security review. */
@@ -379,15 +392,19 @@ function log_access(PDO $pdo, $event, $code = null, $user_id = null)
 {
     $ua = user_agent();
     $p = parse_user_agent($ua);
+    $ip = client_ip();
+    // Per-link unique-visitor fingerprint (daily-salted; no cookie). Only for
+    // code-scoped events so account-level events don't skew per-link uniques.
+    $vhash = ($code !== null && function_exists('visitor_hash')) ? visitor_hash($ip, $ua, (string) $code) : '';
     try {
         $stmt = $pdo->prepare(
-            'INSERT INTO access_log (ts, event, code, user_id, ip, browser, platform, referer, user_agent)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO access_log (ts, event, code, user_id, ip, browser, platform, device, referer, user_agent, visitor_hash)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array(
-            time(), $event, $code, $user_id, client_ip(), $p['browser'], $p['platform'],
+            time(), $event, $code, $user_id, $ip, $p['browser'], $p['platform'], $p['device'],
             mb_substr(isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '', 0, 255),
-            mb_substr($ua, 0, 255),
+            mb_substr($ua, 0, 255), $vhash,
         ));
     } catch (Exception $e) {
         error_log('access_log failed: ' . $e->getMessage());

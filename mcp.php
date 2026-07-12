@@ -181,7 +181,7 @@ function mcp_tools()
         ),
         array(
             'name'        => 'get_stats',
-            'description' => 'Get details and click count for one short link by its code.',
+            'description' => 'Get details, lifetime click count, and last-30-day analytics (clicks + unique visitors) for one short link by its code.',
             'inputSchema' => array(
                 'type'       => 'object',
                 'properties' => array('code' => array('type' => 'string', 'description' => 'The short code, e.g. "a3f9Zk".')),
@@ -234,10 +234,19 @@ function mcp_call(PDO $pdo, array $user, $name, array $args)
             if (!$r) {
                 return tool_error('No link found with code "' . $code . '".');
             }
+            // Last-30-day analytics from access_log (fail-safe if not migrated).
+            $recent = '';
+            try {
+                $agg = $pdo->prepare('SELECT COUNT(*) c, COUNT(DISTINCT visitor_hash) u FROM access_log WHERE code = ? AND ts >= ?');
+                $agg->execute(array($code, time() - 30 * 86400));
+                $x = $agg->fetch();
+                $recent = "Last 30 days: " . (int) $x['c'] . " clicks, " . (int) $x['u'] . " unique visitors\n";
+            } catch (Exception $e) { /* analytics columns absent — skip */ }
             return tool_text(
                 BASE_HREF . $r['code'] . "\n"
                 . "Destination: " . $r['long_url'] . "\n"
-                . "Clicks: " . (int) $r['clicks'] . "\n"
+                . "Clicks (lifetime): " . (int) $r['clicks'] . "\n"
+                . $recent
                 . "Custom name: " . ($r['is_custom'] ? 'yes' : 'no') . "\n"
                 . "Created: " . gmdate('Y-m-d H:i', (int) $r['created']) . ' UTC'
             );
