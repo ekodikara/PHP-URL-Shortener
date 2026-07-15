@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+#
+# Snip — block accidental commits of Stripe SECRET material.
+#
+# Matches REAL secret/restricted keys (sk_/rk_ + long random suffix) and webhook
+# signing secrets (whsec_ + long suffix). Publishable keys (pk_) are PUBLIC and
+# intentionally NOT blocked. Short placeholders like "sk_live_xxx" / "whsec_..."
+# in .env.example and docs are too short to match, so they commit fine.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+# Emergency bypass (discouraged): git commit --no-verify
+#
+# Real keys have a long base62 suffix; require 20+ so placeholders don't trip it.
+pattern='(sk|rk)_(live|test)_[0-9A-Za-z]{20,}|whsec_[0-9A-Za-z]{20,}'
+
+# Scan only ADDED lines in the staged diff (ignore the +++ file header).
+hits="$(git diff --cached --diff-filter=ACM -U0 \
+          | grep -E '^\+' | grep -vE '^\+\+\+' \
+          | grep -En "$pattern")" || true
+
+if [ -n "$hits" ]; then
+  {
+    echo ""
+    echo "  ✋  Commit blocked — a Stripe SECRET looks like it's staged."
+    echo ""
+    echo "      Secret/restricted keys (sk_… / rk_…) and webhook secrets (whsec_…)"
+    echo "      must never be committed. Put them in .env (git-ignored) instead."
+    echo ""
+    echo "      Matched (redacted):"
+    echo "$hits" | sed -E 's/((sk|rk)_(live|test)_|whsec_)[0-9A-Za-z]{4}[0-9A-Za-z]+/\1****REDACTED****/g' | sed 's/^/        /'
+    echo ""
+    echo "      Locate it:        git diff --cached | grep -nE '(sk|rk)_|whsec_'"
+    echo "      Emergency bypass: git commit --no-verify   (discouraged)"
+    echo ""
+  } >&2
+  exit 1
+fi
+
+exit 0
