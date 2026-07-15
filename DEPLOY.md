@@ -107,8 +107,12 @@ redirect works → a real card checkout activates the plan.
 
 In the Stripe Dashboard → Developers → Webhooks, add an endpoint:
 `https://SITE_DOMAIN/stripe-webhook` (events: `checkout.session.completed`,
-`customer.subscription.deleted`). Copy its signing secret into `STRIPE_WEBHOOK_SECRET`
-in `.env`, then `docker compose -f docker-compose.prod.yml up -d` to apply.
+`customer.subscription.created`, `customer.subscription.updated`,
+`customer.subscription.deleted`). Copy its signing secret into
+`STRIPE_WEBHOOK_SECRET` in `.env`, then `docker compose -f docker-compose.prod.yml up -d`.
+
+**Full Stripe setup — keys, restricted-key scopes, Customer Portal, dispute
+prevention, GST, go-live checklist: see `STRIPE.md`.**
 
 ## 7. Backups + durability
 

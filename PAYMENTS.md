@@ -7,6 +7,9 @@ Checkout Sessions (subscription mode), Customer Portal, and signature-verified
 webhooks in `inc/stripe.php`. This doc records the payments decision and the
 Stripe registration checklist.
 
+> **Setting Stripe up? See `STRIPE.md`** for the step-by-step (keys, webhook,
+> Customer Portal, dispute-prevention settings, GST, go-live checklist).
+>
 > **Bottom line:** keep **Stripe** (it's built, AU-native, and cheapest of the
 > mature subscription options at this price point) → add **Stripe Tax** to
 > collect GST/VAT correctly → offer **PayPal** only if checkout data justifies
