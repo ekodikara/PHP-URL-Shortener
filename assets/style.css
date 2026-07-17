@@ -501,6 +501,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 .page-head-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .hero-sub { padding: 36px 0 8px; }
+.hero-sub + #pricing { margin-top: 36px; }
 
 .auth-divider { display: flex; align-items: center; gap: 12px; margin: 18px 0; color: var(--ink-dim); font-size: 0.85rem; }
 .auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: var(--rule); }
