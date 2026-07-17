@@ -50,14 +50,16 @@ $bench_cut   = max(0, strlen($bench_long) - strlen($bench_short));
 <?php endif; ?>
 </div>
 
+<?php if (!$user): ?>
 <section id="pricing">
   <div class="section-head">
     <h2>Simple, honest pricing</h2>
     <p>Start free. Upgrade when you outgrow it.</p>
   </div>
   <div class="plans">
-    <?php render_plans($user ? $user['plan'] : null); ?>
+    <?php render_plans(null); ?>
   </div>
 </section>
+<?php endif; ?>
 
 <?php render_footer(); ?>

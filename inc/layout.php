@@ -31,7 +31,11 @@ function render_header($title = '')
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch between light and dark mode" title="Light / dark">
       <span class="moon" aria-hidden="true">☾</span><span class="sun" aria-hidden="true">☀</span>
     </button>
-    <a href="/#pricing">Pricing</a>
+    <?php if ($u): ?>
+      <a href="upgrade">Pricing</a>
+    <?php else: ?>
+      <a href="/#pricing">Pricing</a>
+    <?php endif; ?>
     <?php if ($u): ?>
       <a href="dashboard">Dashboard</a>
       <?php if (is_on_trial($u)): ?>
